@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Authentic Multi-Page PDF Print Styles for Quotations */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 6mm 8mm 6mm;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Unset root and layout overflow constraints that prevent pagination */
+  #root,
+  #root > div,
+  main,
+  .pdf-viewer-modal-backdrop,
+  .pdf-canvas-container {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Hide sidebar, navigation, headers, modal toolbar */
+  aside,
+  header,
+  nav,
+  .print\:hidden,
+  [class*="print:hidden"] {
+    display: none !important;
+  }
+
+  /* When modal is open, hide the main sales page behind it */
+  .sales-main-dashboard {
+    display: none !important;
+  }
+
+  /* The Modal backdrop: change from fixed overlay to static full page */
+  .pdf-viewer-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    z-index: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .pdf-canvas-container {
+    position: static !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* The Quotation Document Sheet: normal static flow allows multi-page pagination */
+  #official-quotation-doc {
+    position: static !important;
+    float: none !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* Multi-page table handling */
+  table {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    width: 100% !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tbody {
+    display: table-row-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Prevent blocks from being split awkwardly across page breaks */
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
