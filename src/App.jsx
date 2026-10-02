@@ -21,6 +21,10 @@ import TaskTemplates from './pages/TaskTemplates';
 
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import Incentives from './pages/Incentives';
+import MyEarnings from './pages/MyEarnings';
+import MyExpenses from './pages/MyExpenses';
+import ManageExpenses from './pages/ManageExpenses';
 import MyLeads from './pages/MyLeads';
 import PublicQuotationView from './pages/PublicQuotationView';
 import Products from './pages/Products';
@@ -52,6 +56,10 @@ function App() {
           <Route path="tasks" element={<Tasks />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="users" element={<Users />} />
+          <Route path="incentives" element={<Incentives />} />
+          <Route path="my-earnings" element={<MyEarnings />} />
+          <Route path="my-expenses" element={<MyExpenses />} />
+          <Route path="manage-expenses" element={<ManageExpenses />} />
           <Route path="payments" element={<Payments />} />
           <Route path="roles" element={<Roles />} />
           <Route path="departments" element={<Departments />} />

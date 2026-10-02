@@ -5,12 +5,12 @@ import Swal from 'sweetalert2';
 import apiClient from '../api/axiosConfig';
 
 const PERMISSION_GROUPS = {
-  'User Management': ['create_user', 'manage_employees', 'edit_user', 'delete_user'],
+  'User Management': ['create_user', 'manage_employees', 'edit_user', 'delete_user', 'add_incentive'],
   'Role Management': ['create_role', 'view_roles', 'edit_role', 'delete_role'],
   'Lead Management': ['create_lead', 'view_leads', 'manage_leads', 'convert_lead', 'upload_documents', 'verify_documents', 'view_closed_won'],
   'Sales & Operations': ['create_quotation', 'view_quotations', 'manage_quotations', 'create_project', 'view_projects', 'manage_project_workflow', 'create_task', 'add_task_remark', 'initialize_payment', 'view_payments', 'add_transaction'],
   'Master Data': ['manage_products', 'create_department', 'edit_department', 'delete_department'],
-  'System & Reports': ['update_settings', 'manage_settings', 'view_dashboard_stats', 'view_dashboard_alerts', 'view_calendar']
+  'System & Reports': ['update_settings', 'manage_settings', 'view_dashboard_stats', 'view_dashboard_alerts', 'view_calendar', 'manage_expenses']
 };
 
 const Roles = () => {

@@ -68,39 +68,36 @@ const Calendar = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div className="flex flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CalendarIcon className="w-6 h-6 text-[#0B3A2C]" />
-            Follow-up Calendar
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
+            <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#0B3A2C] shrink-0" />
+            <span className="hidden sm:inline">Follow-up Calendar</span>
+            <span className="sm:hidden">Calendar</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your upcoming calls and meetings</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Manage your upcoming calls and meetings</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={goToToday} className="px-4 py-2 border border-gray-200 bg-white rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
-            Today
-          </button>
-        </div>
+
       </div>
 
       {/* Calendar Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Calendar Nav */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/30">
-          <button onClick={goToPrevMonth} className="p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors shadow-sm">
-            <ChevronLeft className="w-5 h-5" />
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-100 bg-gray-50/30">
+          <button onClick={goToPrevMonth} className="p-1.5 sm:p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors shadow-sm">
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
-          <h2 className="text-xl font-bold text-[#0B3A2C]">
+          <h2 className="text-lg sm:text-xl font-bold text-[#0B3A2C]">
             {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </h2>
-          <button onClick={goToNextMonth} className="p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors shadow-sm">
-            <ChevronRight className="w-5 h-5" />
+          <button onClick={goToNextMonth} className="p-1.5 sm:p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors shadow-sm">
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Calendar Grid */}
-        <div className="overflow-x-auto">
-          <div className="min-w-[800px]">
+        <div className="overflow-x-auto scrollbar-hide sm:scrollbar-default">
+          <div className="min-w-[600px] sm:min-w-[800px]">
             {/* Days Header */}
             <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50/80">
               {daysOfWeek.map((day) => (

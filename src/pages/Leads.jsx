@@ -305,12 +305,12 @@ const Leads = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <div className="flex flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage and track all your sales leads</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Leads</h1>
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Manage and track all your sales leads</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           {hasCreateLead && (
             <button onClick={openAddModal} className="bg-[#0B3A2C] text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-[#0a2f23] transition-colors flex items-center gap-2">
               <Plus className="w-4 h-4" />
@@ -909,7 +909,7 @@ const Leads = () => {
                           </div>
 
                           <form onSubmit={handleAddRemark} className="flex flex-col gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100 shadow-sm">
-                              <div className="flex gap-2">
+                              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                                   {(() => {
                                       const isAdminOrManager = currentUser?.role?.name === 'Admin' || currentUser?.role?.name === 'Sales Manager';
                                       const postApprovalStatuses = ['Quotation Approved', 'New', 'Interested', 'Follow-up', 'Negotiation', 'Closed-Won', 'Closed-Lost'];
@@ -917,7 +917,7 @@ const Leads = () => {
                                       
                                       if (selectedLead?.status === 'Closed-Won') {
                                           return (
-                                              <div className="w-1/3 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-between">
+                                              <div className="w-full sm:w-1/3 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-between">
                                                   <span>Closed-Won</span>
                                                   <span className="text-[10px] text-gray-400">Locked</span>
                                               </div>
@@ -926,7 +926,7 @@ const Leads = () => {
 
                                       if (isAdminOrManager) {
                                           return (
-                                              <select value={remarkStatus} onChange={(e) => setRemarkStatus(e.target.value)} className="w-1/3 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white">
+                                              <select value={remarkStatus} onChange={(e) => setRemarkStatus(e.target.value)} className="w-full sm:w-1/3 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white">
                                                 <option value="Pending">Pending</option>
                                                 <option value="New">New</option>
                                                 <option value="Contacted">Contacted</option>
@@ -945,7 +945,7 @@ const Leads = () => {
                                           );
                                       } else if (canSalesEdit) {
                                           return (
-                                              <select value={remarkStatus} onChange={(e) => setRemarkStatus(e.target.value)} className="w-1/3 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white">
+                                              <select value={remarkStatus} onChange={(e) => setRemarkStatus(e.target.value)} className="w-full sm:w-1/3 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white">
                                                 <option value="Quotation Approved">Quotation Approved</option>
                                                 <option value="New">New</option>
                                                 <option value="Interested">Interested</option>
@@ -957,7 +957,7 @@ const Leads = () => {
                                           );
                                       }
                                       return (
-                                          <div className="w-1/3 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-between">
+                                          <div className="w-full sm:w-1/3 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-between">
                                               <span>{selectedLead?.status}</span>
                                           </div>
                                       );
@@ -967,21 +967,21 @@ const Leads = () => {
                                       value={remarkText} 
                                       onChange={(e) => setRemarkText(e.target.value)}
                                       placeholder="Type a new follow-up remark..."
-                                      className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                      className="flex-1 w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                       required
                                   />
                               </div>
-                              <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2 sm:mt-0">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                       <label className="text-xs text-gray-600 font-semibold whitespace-nowrap">Schedule Next Call:</label>
                                       <input 
                                           type="datetime-local" 
                                           value={nextFollowUpDate}
                                           onChange={(e) => setNextFollowUpDate(e.target.value)}
-                                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
+                                          className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
                                       />
                                   </div>
-                                  <button type="submit" className="bg-[#0B3A2C] text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-colors whitespace-nowrap">
+                                  <button type="submit" className="w-full sm:w-auto bg-[#0B3A2C] text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-colors whitespace-nowrap">
                                       Save Remark
                                   </button>
                               </div>

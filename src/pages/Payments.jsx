@@ -172,16 +172,16 @@ const Payments = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-emerald-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
+            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0" />
             Payment Tracking
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Track all customer payments, transactions and follow-ups.</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Track all customer payments, transactions and follow-ups.</p>
         </div>
         {hasPermission('initialize_payment') && (
           <button
             onClick={() => setInitModal(true)}
-            className="bg-[#0B3A2C] hover:bg-[#124b39] text-white px-4 py-2 rounded-xl transition-all shadow-sm font-semibold text-sm inline-flex items-center gap-2"
+            className="bg-[#0B3A2C] hover:bg-[#124b39] text-white px-4 py-2 sm:py-2.5 rounded-lg transition-all shadow-sm font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto shrink-0"
           >
             <Plus className="w-4 h-4" /> Initialize Payment
           </button>
@@ -245,31 +245,33 @@ const Payments = () => {
             <div key={payment._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               {/* Card Header */}
               <div
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-3"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-4 sm:gap-3"
                 onClick={() => setExpandedId(expandedId === payment._id ? null : payment._id)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#0B3A2C]/10 flex items-center justify-center flex-shrink-0">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#0B3A2C]/10 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
                     <IndianRupee className="w-5 h-5 text-[#0B3A2C]" />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">{payment.lead?.customerName || 'Unknown Customer'}</p>
+                    <p className="font-bold text-gray-900 text-sm break-words">{payment.lead?.customerName || 'Unknown Customer'}</p>
                     <p className="text-xs text-gray-400">{payment.lead?.contactNumber || ''}</p>
                     {payment.project?.customerName && (
-                      <p className="text-xs text-emerald-600 font-medium mt-0.5">📁 {payment.project.customerName}</p>
+                      <p className="text-[10px] sm:text-xs text-emerald-600 font-medium mt-0.5">📁 {payment.project.customerName}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="w-40">
+                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 flex-wrap w-full sm:w-auto border-t sm:border-0 border-gray-100 pt-3 sm:pt-0">
+                  <div className="w-full sm:w-40 order-last sm:order-first">
                     <ProgressBar paid={payment.paidAmount} total={payment.totalAmount} />
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">₹{payment.totalAmount?.toLocaleString('en-IN')}</p>
-                    <p className="text-xs text-red-500 font-medium">Due: ₹{payment.balanceAmount?.toLocaleString('en-IN')}</p>
+                  <div className="text-left sm:text-right flex-1 sm:flex-none">
+                    <p className="text-sm font-bold text-gray-900 whitespace-nowrap">₹{payment.totalAmount?.toLocaleString('en-IN')}</p>
+                    <p className="text-[11px] sm:text-xs text-red-500 font-medium whitespace-nowrap">Due: ₹{payment.balanceAmount?.toLocaleString('en-IN')}</p>
                   </div>
-                  <StatusBadge status={payment.status} />
-                  {expandedId === payment._id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={payment.status} />
+                    {expandedId === payment._id ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+                  </div>
                 </div>
               </div>
 

@@ -175,18 +175,18 @@ const Profile = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             {activeTab === 'Change Password' ? 'Change Password' : 'My Profile'}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">
             {activeTab === 'Change Password' 
               ? 'Update your password to keep your account secure.' 
               : 'Manage your account information, profile details and preferences.'}
           </p>
         </div>
-        <div className="flex items-center text-sm text-gray-500 gap-2">
+        <div className="flex items-center text-xs sm:text-sm text-gray-500 gap-1.5 sm:gap-2 flex-wrap">
           <span className="hover:text-gray-700 cursor-pointer">Dashboard</span>
           <ChevronRight className="w-4 h-4" />
           <span 
@@ -274,32 +274,32 @@ const Profile = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               
               {/* Tabs */}
-              <div className="flex flex-wrap gap-2 p-5 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex flex-col sm:flex-row gap-2 p-4 sm:p-5 border-b border-gray-100 bg-gray-50/50">
                 <button 
                   onClick={() => setActiveTab('Personal Information')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'Personal Information' ? 'bg-[#0B3A2C] text-white shadow-sm' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${activeTab === 'Personal Information' ? 'bg-[#0B3A2C] text-white shadow-sm' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
                 >
                   <User className="w-4 h-4" /> Personal Information
                 </button>
                 <button 
                   onClick={() => setActiveTab('Change Password')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'Change Password' ? 'bg-[#0B3A2C] text-white shadow-sm' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${activeTab === 'Change Password' ? 'bg-[#0B3A2C] text-white shadow-sm' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
                 >
                   <Lock className="w-4 h-4" /> Change Password
                 </button>
               </div>
 
               {/* Content Area */}
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-6">
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">Personal Information</h3>
-                    <p className="text-sm text-gray-500 mt-1">Update your personal details and contact information.</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Update your personal details and contact information.</p>
                   </div>
                   {!isEditing && (
                     <button 
                       onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#0B3A2C] text-white rounded-lg text-sm font-medium shadow-sm hover:bg-[#0a2f23] transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 bg-[#0B3A2C] text-white rounded-lg text-sm font-medium shadow-sm hover:bg-[#0a2f23] transition-colors w-full sm:w-auto shrink-0"
                     >
                       <Edit3 className="w-4 h-4" /> Edit Profile
                     </button>

@@ -65,12 +65,19 @@ const SettingsPage = () => {
     linkedinUrl: 'https://www.linkedin.com/company/digicoders-technologies',
     instagramUrl: 'https://www.instagram.com/digicoders',
     facebookUrl: 'https://www.facebook.com/digicoders',
-    youtubeUrl: 'https://www.youtube.com/@digicoders'
+    youtubeUrl: 'https://www.youtube.com/@digicoders',
+
+    // Bank Account Details
+    bankAccountName: '',
+    bankAccountNumber: '',
+    bankIfsc: '',
+    bankBranch: '',
+    bankAccountType: 'Current Account'
   });
 
   const tabs = [
     { id: 'general', name: 'General & Company', icon: Building2, desc: 'Company details & contact' },
-    { id: 'tat', name: 'TAT & Deadlines', icon: Clock, desc: 'SLA hours & breach alerts' },
+    { id: 'bank', name: 'Bank Details', icon: DollarSign, desc: 'Account details shown in PDF' },
     { id: 'documents', name: 'Lead Documents', icon: FileText, desc: 'Configure required documents for leads' },
     { id: 'system', name: 'System & Security', icon: ShieldCheck, desc: 'Environment & role access' },
   ];
@@ -113,7 +120,14 @@ const SettingsPage = () => {
             linkedinUrl: res.data.linkedinUrl || prev.linkedinUrl,
             instagramUrl: res.data.instagramUrl || prev.instagramUrl,
             facebookUrl: res.data.facebookUrl || prev.facebookUrl,
-            youtubeUrl: res.data.youtubeUrl || prev.youtubeUrl
+            youtubeUrl: res.data.youtubeUrl || prev.youtubeUrl,
+
+            // Bank Account Details
+            bankAccountName: res.data.bankAccountName || '',
+            bankAccountNumber: res.data.bankAccountNumber || '',
+            bankIfsc: res.data.bankIfsc || '',
+            bankBranch: res.data.bankBranch || '',
+            bankAccountType: res.data.bankAccountType || 'Current Account'
           }));
         }
 
@@ -277,15 +291,15 @@ const SettingsPage = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             System & Master Settings
-            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 sm:px-2.5 py-0.5 rounded-full whitespace-nowrap">
               Live API
             </span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">
             Global CRM configurations for tax calculation, TAT SLAs, and company info
           </p>
         </div>
@@ -293,7 +307,7 @@ const SettingsPage = () => {
         <button 
           onClick={handleSave}
           disabled={isSaving || isLoading}
-          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0B3A2C] text-white rounded-xl text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-all disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0B3A2C] text-white rounded-xl text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-all disabled:opacity-50 w-full sm:w-auto shrink-0"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {isSaving ? 'Saving Changes...' : 'Save Settings'}
@@ -307,11 +321,11 @@ const SettingsPage = () => {
         </div>
       ) : (
         /* Main Container */
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row overflow-hidden min-h-[580px]">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row min-h-[580px]">
           
           {/* Left Sidebar Menu */}
-          <div className="w-full md:w-72 border-r border-gray-100 p-6 shrink-0 bg-gray-50/50">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-2">
+          <div className="w-full md:w-72 border-b md:border-r md:border-b-0 border-gray-100 p-4 sm:p-6 shrink-0 bg-gray-50/50">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4 px-2">
               Configuration Modules
             </p>
             <div className="space-y-1.5">
@@ -354,7 +368,7 @@ const SettingsPage = () => {
           </div>
 
           {/* Right Form Content */}
-          <div className="flex-1 p-6 md:p-10">
+          <div className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-[calc(100vh-200px)]">
             <form onSubmit={handleSave} className="max-w-2xl space-y-6">
 
               {/* TAB 1: GENERAL & COMPANY */}
@@ -894,52 +908,162 @@ const SettingsPage = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Section 7: Bank Account Details */}
+                  <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-200/80 space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-800 uppercase tracking-wider">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      Bank Account Details (Shown in PDF)
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Account Holder Name</label>
+                        <input
+                          type="text"
+                          name="bankAccountName"
+                          value={formData.bankAccountName}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Ram Milan Singh Charitable Trust"
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">A/c No.</label>
+                        <input
+                          type="text"
+                          name="bankAccountNumber"
+                          value={formData.bankAccountNumber}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 242502100025006"
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">IFSC Code</label>
+                        <input
+                          type="text"
+                          name="bankIfsc"
+                          value={formData.bankIfsc}
+                          onChange={handleInputChange}
+                          placeholder="e.g. UCBA0002425"
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Branch</label>
+                        <input
+                          type="text"
+                          name="bankBranch"
+                          value={formData.bankBranch}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Kadipur, Sultanpur"
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">A/c Type</label>
+                        <select
+                          name="bankAccountType"
+                          value={formData.bankAccountType}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        >
+                          <option value="Current Account">Current Account</option>
+                          <option value="Savings Account">Savings Account</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
 
 
-              {/* TAB 3: TAT & DEADLINES */}
-              {activeTab === 'tat' && (
+
+
+
+              {/* TAB: BANK DETAILS */}
+              {activeTab === 'bank' && (
                 <div className="space-y-6 animate-fadeIn">
                   <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-lg font-bold text-gray-900">Turn Around Time (TAT) & SLAs</h2>
+                    <h2 className="text-lg font-bold text-gray-900">Bank Account Details</h2>
                     <p className="text-sm text-gray-500">
-                      Configure standard operating deadlines and automatic breach triggers.
+                      These bank details appear in the Account Details section of generated PDF quotations.
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-amber-600" />
-                      Lead Approval TAT (in Hours)
-                    </label>
-                    <div className="relative">
-                      <input 
-                        type="number" 
-                        name="leadApprovalTAT"
-                        min="1"
-                        max="720"
-                        value={formData.leadApprovalTAT}
-                        onChange={handleInputChange}
-                        placeholder="24" 
-                        className="w-full px-4 py-3 pr-16 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-semibold transition-all"
-                      />
-                      <span className="absolute inset-y-0 right-0 pr-4 flex items-center text-xs font-bold text-gray-400 pointer-events-none">
-                        Hours
-                      </span>
+                  <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-200/80 space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-800 uppercase tracking-wider">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      Account Information
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Target deadline for Sales Managers to review and verify new leads submitted by executives.
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Account Holder / Company Name</label>
+                        <input
+                          type="text"
+                          name="bankAccountName"
+                          value={formData.bankAccountName}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Ram Milan Singh Charitable Trust"
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">A/c No.</label>
+                        <input
+                          type="text"
+                          name="bankAccountNumber"
+                          value={formData.bankAccountNumber}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 242502100025006"
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">IFSC Code</label>
+                        <input
+                          type="text"
+                          name="bankIfsc"
+                          value={formData.bankIfsc}
+                          onChange={handleInputChange}
+                          placeholder="e.g. UCBA0002425"
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Branch</label>
+                        <input
+                          type="text"
+                          name="bankBranch"
+                          value={formData.bankBranch}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Kadipur, Sultanpur"
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Account Type</label>
+                        <select
+                          name="bankAccountType"
+                          value={formData.bankAccountType}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        >
+                          <option value="Current Account">Current Account</option>
+                          <option value="Savings Account">Savings Account</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Warning Notice Box */}
-                  <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                    <div className="text-xs text-amber-800 leading-relaxed">
-                      <span className="font-bold">Automated Breach Notification:</span> If a department employee fails to complete a task within their <span className="font-bold">assigned SLA limit</span>, the system marks the task as <span className="underline font-bold">Overdue / TAT Breached</span> and requires managerial remarks before resolution.
-                    </div>
+                  {/* Info box */}
+                  <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <Info className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <p className="text-sm text-emerald-800">
+                      These details will appear in the <strong>Account Details</strong> section at the bottom of every generated PDF quotation.
+                    </p>
                   </div>
                 </div>
               )}

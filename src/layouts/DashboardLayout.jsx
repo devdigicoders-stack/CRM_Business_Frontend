@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, UserCircle, Briefcase, CheckSquare, 
-    Calendar as CalendarIcon, Shield, Building2, 
-    Settings, Bell, User, Menu, LogOut, Key, ClipboardList, Trophy, Package, CreditCard
+    Calendar as CalendarIcon, Shield, Building2,
+    Settings, Bell, User, Menu, LogOut, Key, ClipboardList, Trophy, Package, CreditCard, Wallet, Receipt
 } from 'lucide-react';
 import apiClient from '../api/axiosConfig';
 
@@ -18,11 +18,15 @@ const navItems = [
     { name: 'Products', path: '/dashboard/products', icon: Package, permission: 'manage_products' },
     { name: 'Payments', path: '/dashboard/payments', icon: CreditCard, permission: 'view_payments' },
     { name: 'Users', path: '/dashboard/users', icon: Shield, permission: 'view_users' },
+    { name: 'Incentives', path: '/dashboard/incentives', icon: Trophy, permission: 'add_incentive' },
     { name: 'Roles & Permissions', path: '/dashboard/roles', icon: Key, permission: 'view_roles' },
     { name: 'Departments', path: '/dashboard/departments', icon: Building2, permission: null },
     { name: 'Task Templates', path: '/dashboard/task-templates', icon: ClipboardList, permission: 'manage_settings' },
 
     { name: 'Profile', path: '/dashboard/profile', icon: User, permission: null },
+    { name: 'My Earnings', path: '/dashboard/my-earnings', icon: Wallet, permission: null },
+    { name: 'My Expenses', path: '/dashboard/my-expenses', icon: Receipt, permission: null },
+    { name: 'Manage Expenses', path: '/dashboard/manage-expenses', icon: Receipt, permission: 'manage_expenses' },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings, permission: 'update_settings' },
 ];
 
@@ -183,18 +187,8 @@ const DashboardLayout = () => {
                     </div>
                     
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                            <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-                                <Bell className="w-5 h-5" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white box-content"></span>
-                            </button>
-
-                        </div>
-                        
-                        <div className="h-8 w-px bg-gray-200 hidden sm:block mx-1"></div>
-
                         <Link to="/dashboard/profile" className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-gray-200">
-                            <img src={user?.profileImage || "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff"} alt="User" className="w-9 h-9 rounded-full object-cover shadow-sm" />
+                            <img src={user?.profileImage ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000${user.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0D8ABC&color=fff`} alt="User" className="w-9 h-9 rounded-full object-cover shadow-sm" />
                             <div className="text-sm hidden sm:block">
                                 <p className="font-bold text-gray-800 leading-tight">{user?.name || "Loading..."}</p>
                                 <p className="text-[11px] text-gray-500 font-medium">{user?.role?.name || "User"}</p>

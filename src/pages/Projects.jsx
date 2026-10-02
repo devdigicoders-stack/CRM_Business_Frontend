@@ -219,22 +219,24 @@ const Projects = () => {
 
     return (
         <div className="space-y-6 relative">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Briefcase className="w-6 h-6 text-emerald-600" />
-                        Projects (Operations)
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
+                        <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0" />
+                        <span className="hidden sm:inline">Projects (Operations)</span>
+                        <span className="sm:hidden">Projects</span>
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-[11px] sm:text-sm text-gray-500 mt-1">
                         Manage converted deals and track project execution stages.
                     </p>
                 </div>
                 <button
                     onClick={handleOpenCreateModal}
-                    className="bg-[#0B3A2C] hover:bg-[#124b39] text-white px-4 py-2 rounded-xl transition-all shadow-sm font-semibold text-sm inline-flex items-center gap-2"
+                    className="bg-[#0B3A2C] hover:bg-[#124b39] text-white px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm font-semibold text-sm inline-flex items-center gap-1.5 sm:gap-2 shrink-0"
                 >
-                    <Plus className="w-4 h-4" />
-                    Create Project
+                    <Plus className="w-4 h-4 shrink-0" />
+                    <span className="hidden sm:inline">Create Project</span>
+                    <span className="sm:hidden">Create</span>
                 </button>
             </div>
 
@@ -418,32 +420,32 @@ const Projects = () => {
                             </button>
                         </div>
                         
-                        <div className="overflow-y-auto p-6">
-                            <table className="w-full text-left text-xs">
+                        <div className="overflow-y-auto overflow-x-auto p-4 sm:p-6">
+                            <table className="w-full text-left text-[10px] sm:text-xs min-w-[500px]">
                                 <thead className="bg-gray-50/70 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
                                     <tr>
-                                        <th className="py-3 px-4">Task Details</th>
-                                        <th className="py-3 px-4">Assignee</th>
-                                        <th className="py-3 px-4">Status</th>
-                                        <th className="py-3 px-4">Deadline</th>
-                                        <th className="py-3 px-4">Action Info</th>
+                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Task Details</th>
+                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Assignee</th>
+                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Status</th>
+                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Deadline</th>
+                                        <th className="py-2 sm:py-3 px-2 sm:px-4 text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {allTasks.filter(t => t.project?._id === viewProjectModal.project._id).map((task) => (
                                         <tr key={task._id} className="hover:bg-gray-50">
-                                            <td className="py-3 px-4">
+                                            <td className="py-2 sm:py-3 px-2 sm:px-4">
                                                 <div className="font-bold text-gray-900">{task.taskName}</div>
                                                 <div className="text-[10px] text-gray-500">Step {task.stepNumber}</div>
                                             </td>
-                                            <td className="py-3 px-4">
+                                            <td className="py-2 sm:py-3 px-2 sm:px-4">
                                                 {task.assignedTo ? (
                                                     <span className="font-semibold">{task.assignedTo.name}</span>
                                                 ) : (
                                                     <span className="text-gray-400 italic">Unassigned</span>
                                                 )}
                                             </td>
-                                            <td className="py-3 px-4 flex flex-col items-start gap-1">
+                                            <td className="py-2 sm:py-3 px-2 sm:px-4 flex flex-col items-start gap-1">
                                                 <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${
                                                     task.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
                                                     task.status === 'Approved' ? 'bg-green-100 text-green-700' :
@@ -462,10 +464,10 @@ const Projects = () => {
                                                     <span className="text-[10px] text-red-500 font-medium">Rejected: {new Date(task.approvedAt).toLocaleDateString()}</span>
                                                 )}
                                             </td>
-                                            <td className="py-3 px-4 text-gray-600">
+                                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-600">
                                                 {task.dueDate ? <CountdownTimer dueDate={task.dueDate} status={task.status} submittedAt={task.submittedAt} opsHeadReminderHours={task.opsHeadReminderHours} /> : 'Not set'}
                                             </td>
-                                            <td className="py-3 px-4 text-[10px] text-gray-500 flex flex-col gap-1 items-start justify-center">
+                                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-[10px] text-gray-500 flex flex-col gap-1 items-center sm:items-start justify-center text-center">
                                                 {task.remarks?.length > 0 && <div className="text-red-500 font-semibold mb-1">Has remarks</div>}
                                                 
                                                 {hasPermission('manage_project_workflow') && task.status !== 'Pending' && (
@@ -525,8 +527,8 @@ const Projects = () => {
                     
                     <div className="overflow-y-auto p-6 flex flex-col gap-6">
                         {/* Assignment Details */}
-                        <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <div className="flex flex-col">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200 gap-4 sm:gap-0">
+                            <div className="flex flex-col w-full sm:w-auto">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Assigned By</span>
                                 <div className="flex items-center gap-2">
                                     <User className="w-4 h-4 text-gray-400" />
@@ -536,7 +538,7 @@ const Projects = () => {
                             <div className="hidden sm:block text-gray-300">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                             </div>
-                            <div className="flex flex-col sm:items-end mt-4 sm:mt-0">
+                            <div className="flex flex-col sm:items-end mt-2 sm:mt-0 w-full sm:w-auto border-t sm:border-0 border-gray-200 pt-3 sm:pt-0">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Assigned To</span>
                                 <div className="flex items-center gap-2">
                                     <User className="w-4 h-4 text-[#0B3A2C]" />
@@ -546,7 +548,7 @@ const Projects = () => {
                         </div>
 
                         {/* Task Timeline & Details */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                             <div className="bg-gray-50 p-3 rounded-md border border-gray-200 flex flex-col justify-between">
                                 <div>
                                     <span className="block text-[10px] text-gray-500 font-bold uppercase mb-1">Generated At</span>
@@ -617,7 +619,7 @@ const Projects = () => {
                                 <div className="space-y-3">
                                     {approveModal.task.remarks.map((rmk, idx) => (
                                         <div key={idx} className="bg-yellow-50/30 p-3 rounded-lg border border-yellow-100/50 text-sm">
-                                            <div className="flex justify-between items-center mb-1 border-b border-yellow-100/50 pb-1">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 border-b border-yellow-100/50 pb-1 gap-1 sm:gap-0">
                                                 <span className="font-bold text-gray-700 text-xs">
                                                     {rmk.addedBy?.name ? `${rmk.addedBy.name} (${rmk.addedBy.role?.name || 'Employee'})` : 'User'}
                                                 </span>

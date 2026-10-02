@@ -201,27 +201,27 @@ const Tasks = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CheckSquare className="h-6 w-6 text-[#0B3A2C]" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
+            <CheckSquare className="h-5 w-5 sm:h-6 sm:w-6 text-[#0B3A2C] shrink-0" />
             Project Tasks
           </h1>
-          <p className="text-gray-500 text-sm mt-1">Manage project workflows and approvals</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Manage project workflows and approvals</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-gray-50/50">
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Project & Step</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Task Details</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Assignee</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Deadline</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">Action</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Project & Step</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Task Details</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Assignee</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Status</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Deadline</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 text-right whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -236,9 +236,9 @@ const Tasks = () => {
               ) : (
                 tasks.map((task) => (
                   <tr key={task._id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">{task.project?.customerName}</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
                         Step {task.stepNumber} <span className="mx-1">•</span> 
                         {task.project?.currentStep === task.stepNumber ? 
                           <span className="text-green-600 font-medium">Active Step</span> : 
@@ -246,31 +246,31 @@ const Tasks = () => {
                         }
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">{task.taskName}</div>
-                      <div className="text-xs text-gray-500">{task.department?.name}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500">{task.department?.name}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {task.assignedTo ? (
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
+                          <User className="h-4 w-4 text-gray-400 shrink-0" />
                           <span className="text-sm text-gray-700">{task.assignedTo.name}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400 italic">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {getStatusBadge(task.status)}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {task.dueDate ? (
                         <CountdownTimer dueDate={task.dueDate} status={task.status} submittedAt={task.submittedAt} opsHeadReminderHours={task.opsHeadReminderHours} />
                       ) : (
-                        <span className="text-xs font-semibold px-2 py-1 bg-gray-50 text-gray-400 rounded-md border border-gray-100">Not set</span>
+                        <span className="text-[10px] sm:text-xs font-semibold px-2 py-1 bg-gray-50 text-gray-400 rounded-md border border-gray-100">Not set</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right flex justify-end gap-2 items-center">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right flex justify-end gap-2 items-center whitespace-nowrap">
                       {/* View Task */}
                       <button
                         onClick={() => setViewModal({ isOpen: true, task })}

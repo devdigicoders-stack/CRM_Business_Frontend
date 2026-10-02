@@ -94,17 +94,17 @@ const Products = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Package className="w-6 h-6 text-emerald-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
+            <Package className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0" />
             Products & Services
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-1">
             Manage your product/service catalogue — these appear in Quotation creation
           </p>
         </div>
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0B3A2C] text-white rounded-lg text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-all hover:scale-[1.01]"
+          className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#0B3A2C] text-white rounded-lg text-xs sm:text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-all hover:scale-[1.01] w-full sm:w-auto shrink-0"
         >
           <Plus className="w-4 h-4" /> Add Product
         </button>
@@ -140,53 +140,53 @@ const Products = () => {
       ) : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[1000px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">#</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                   <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product / Service Name</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Base Price (₹)</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Selling Price (₹)</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">GST (%)</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-5 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Base Price (₹)</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Selling Price (₹)</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">GST (%)</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Description</th>
+                  <th className="px-5 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredProducts.map((product, idx) => (
                   <tr key={product._id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-5 py-4 text-gray-400 font-medium">{idx + 1}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 text-gray-400 font-medium whitespace-nowrap">{idx + 1}</td>
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${product.itemType === 'Service' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                         {product.itemType || 'Product'}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 min-w-[250px]">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
                           <Package className="w-4 h-4 text-emerald-600" />
                         </div>
-                        <span className="font-semibold text-gray-800">{product.name}</span>
+                        <span className="font-semibold text-gray-800 break-words">{product.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <span className="font-medium text-gray-500">
                         {product.basePrice ? `₹${Number(product.basePrice).toLocaleString('en-IN')}` : <span className="text-gray-300">—</span>}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <span className="font-bold text-emerald-700 text-base">
                         ₹{Number(product.price).toLocaleString('en-IN')}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <span className="font-bold text-gray-700">{product.gstPercentage ?? 18}%</span>
                     </td>
                     <td className="px-5 py-4 text-gray-500 text-xs max-w-xs truncate">
                       {product.description || <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openEditModal(product)}
@@ -234,8 +234,8 @@ const Products = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="sm:col-span-1">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Type *</label>
                   <select
                     value={formData.itemType}
@@ -246,7 +246,7 @@ const Products = () => {
                     <option value="Service">Service</option>
                   </select>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name *</label>
                   <input
                     type="text"
@@ -259,7 +259,7 @@ const Products = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Base Price (₹)</label>
                   <input
