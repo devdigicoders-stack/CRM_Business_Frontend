@@ -180,7 +180,7 @@ const Incentives = () => {
                         <div className="flex items-center gap-3">
                           <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] sm:text-xs overflow-hidden shrink-0">
                             {emp.profileImage ? (
-                              <img src={`http://localhost:5000${emp.profileImage}`} alt={emp.name} className="w-full h-full object-cover" />
+                              <img src={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${emp.profileImage}`} alt={emp.name} className="w-full h-full object-cover" />
                             ) : (
                               emp.name ? emp.name.substring(0, 2).toUpperCase() : 'U'
                             )}

@@ -144,7 +144,7 @@ const Users = () => {
       reportingManager: user.reportingManager ? user.reportingManager._id : ''
     });
     setProfileImageFile(null);
-    setProfileImagePreview(user.profileImage ? `http://localhost:5000${user.profileImage}` : null);
+    setProfileImagePreview(user.profileImage ? `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${user.profileImage}` : null);
     setIsModalOpen(true);
   };
 
@@ -323,7 +323,7 @@ const Users = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
                           {user.profileImage ? (
-                            <img src={`http://localhost:5000${user.profileImage}`} alt={user.name} className="w-full h-full object-cover" />
+                            <img src={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${user.profileImage}`} alt={user.name} className="w-full h-full object-cover" />
                           ) : (
                             user.name ? user.name.substring(0, 2).toUpperCase() : 'U'
                           )}
@@ -732,7 +732,7 @@ const Users = () => {
                 <div className="flex-shrink-0">
                   <div className="w-32 h-32 rounded-full border-4 border-gray-50 shadow-sm overflow-hidden bg-gray-100 flex items-center justify-center">
                     {selectedUser.profileImage ? (
-                      <img src={`http://localhost:5000${selectedUser.profileImage}`} alt={selectedUser.name} className="w-full h-full object-cover" />
+                      <img src={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedUser.profileImage}`} alt={selectedUser.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-4xl font-bold text-gray-400">
                         {selectedUser.name ? selectedUser.name.substring(0, 2).toUpperCase() : 'U'}

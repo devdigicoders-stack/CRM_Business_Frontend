@@ -141,7 +141,7 @@ const MyExpenses = () => {
                     <td className="px-4 sm:px-6 py-3 sm:py-4 min-w-[200px] break-words">
                       <p className="text-gray-800 text-xs sm:text-sm">{expense.reason}</p>
                       {expense.billImage && (
-                        <a href={`http://localhost:5000${expense.billImage}`} target="_blank" rel="noreferrer" className="text-[10px] sm:text-xs text-blue-600 hover:underline mt-1 inline-block">
+                        <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${expense.billImage}`} target="_blank" rel="noreferrer" className="text-[10px] sm:text-xs text-blue-600 hover:underline mt-1 inline-block">
                           View Bill/Receipt
                         </a>
                       )}

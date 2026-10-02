@@ -165,7 +165,7 @@ const Profile = () => {
   const profileImageUrl = profileData.profileImagePreview 
     ? profileData.profileImagePreview
     : (profileData.profileImage 
-      ? `http://localhost:5000${profileData.profileImage}` 
+      ? `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${profileData.profileImage}` 
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.name || 'User')}&background=f3f4f6&color=374151&size=150`);
 
   if (isLoading) {

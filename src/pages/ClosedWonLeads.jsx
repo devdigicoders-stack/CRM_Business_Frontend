@@ -194,7 +194,7 @@ const ClosedWonLeads = () => {
                                                     </div>
                                                 </div>
                                                 <a
-                                                    href={`http://localhost:5000${doc.fileUrl}`}
+                                                    href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="px-3 py-1.5 bg-gray-50 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 text-xs font-semibold rounded-lg transition-colors border border-gray-200"

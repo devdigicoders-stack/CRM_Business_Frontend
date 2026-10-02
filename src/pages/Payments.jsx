@@ -324,7 +324,7 @@ const Payments = () => {
                                 <td className="py-2 pr-4 text-gray-500">{new Date(txn.date).toLocaleDateString('en-IN')}</td>
                                 <td className="py-2">
                                   {txn.receiptUrl ? (
-                                    <a href={`http://localhost:5000${txn.receiptUrl}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View</a>
+                                    <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${txn.receiptUrl}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View</a>
                                   ) : '—'}
                                 </td>
                               </tr>

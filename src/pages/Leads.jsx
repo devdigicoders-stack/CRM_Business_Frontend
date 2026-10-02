@@ -792,7 +792,7 @@ const Leads = () => {
                                           </div>
                                           
                                           <div className="flex items-center gap-1">
-                                            <a href={`http://localhost:5000${doc.fileUrl}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="View Document">
+                                            <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="View Document">
                                               <Eye className="w-4 h-4" />
                                             </a>
                                             

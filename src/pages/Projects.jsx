@@ -602,7 +602,7 @@ const Projects = () => {
                                     <div key={idx} className="text-sm flex items-center justify-between bg-white p-3 border border-gray-200 rounded-lg shadow-sm">
                                         <span className="font-semibold text-gray-700">{doc.documentName}</span>
                                         {doc.isUploaded && doc.fileUrl ? (
-                                            <a href={`http://localhost:5000${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-[#0B3A2C] hover:text-emerald-600 font-bold underline text-xs px-3 py-1 bg-gray-50 rounded-full">View File</a>
+                                            <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-[#0B3A2C] hover:text-emerald-600 font-bold underline text-xs px-3 py-1 bg-gray-50 rounded-full">View File</a>
                                         ) : (
                                             <span className="text-xs text-red-500 italic">Not uploaded</span>
                                         )}

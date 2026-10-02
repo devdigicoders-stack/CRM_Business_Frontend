@@ -430,7 +430,7 @@ const Tasks = () => {
                   {approveModal.task?.requiredDocuments?.map((doc, idx) => (
                     <li key={idx} className="text-sm flex items-center justify-between bg-white p-2 border rounded">
                       <span className="font-medium">{doc.documentName}</span>
-                      <a href={`http://localhost:5000${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View File</a>
+                      <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View File</a>
                     </li>
                   ))}
                 </ul>
@@ -517,7 +517,7 @@ const Tasks = () => {
                       <div key={idx} className="flex items-center justify-between bg-white border border-gray-200 p-2.5 rounded-xl">
                         <span className="text-sm font-medium text-gray-700">{doc.documentName}</span>
                         {doc.isUploaded ? (
-                          <a href={doc.fileUrl.startsWith('http') ? doc.fileUrl : `http://localhost:5000${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">View Link</a>
+                          <a href={doc.fileUrl.startsWith('http') ? doc.fileUrl : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">View Link</a>
                         ) : (
                           <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Pending</span>
                         )}

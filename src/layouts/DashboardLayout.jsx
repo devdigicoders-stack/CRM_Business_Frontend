@@ -188,7 +188,7 @@ const DashboardLayout = () => {
                     
                     <div className="flex items-center gap-2 sm:gap-4">
                         <Link to="/dashboard/profile" className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-gray-200">
-                            <img src={user?.profileImage ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000${user.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0D8ABC&color=fff`} alt="User" className="w-9 h-9 rounded-full object-cover shadow-sm" />
+                            <img src={user?.profileImage ? (user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${user.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0D8ABC&color=fff`} alt="User" className="w-9 h-9 rounded-full object-cover shadow-sm" />
                             <div className="text-sm hidden sm:block">
                                 <p className="font-bold text-gray-800 leading-tight">{user?.name || "Loading..."}</p>
                                 <p className="text-[11px] text-gray-500 font-medium">{user?.role?.name || "User"}</p>
