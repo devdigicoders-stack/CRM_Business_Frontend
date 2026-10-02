@@ -685,19 +685,6 @@ const Sales = () => {
 
                     <td className="py-3.5 px-4 text-center">
                       <div className="inline-flex items-center justify-center gap-1.5">
-
-                        {/* View / Print Invoice Button */}
-                        <button
-                          onClick={() => {
-                            setSelectedQuotation(q);
-                            setIsViewModalOpen(true);
-                          }}
-                          title="View Official Invoice"
-                          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-
                         {/* Download PDF Button */}
                         <button
                           onClick={() => {
