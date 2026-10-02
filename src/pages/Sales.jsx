@@ -969,7 +969,7 @@ const Sales = () => {
                     >
                       <div className="grid grid-cols-12 gap-2.5 items-center">
                         {/* Item Type */}
-                        <div className="col-span-12 sm:col-span-2">
+                        <div className="col-span-12 sm:col-span-3">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                             Type
                           </label>
@@ -984,7 +984,7 @@ const Sales = () => {
                         </div>
                         
                         {/* Item Name / Product Select */}
-                        <div className="col-span-12 sm:col-span-3">
+                        <div className="col-span-12 sm:col-span-5">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                             Select {item.itemType} *
                           </label>
@@ -1004,7 +1004,7 @@ const Sales = () => {
                         </div>
 
                         {/* GST % */}
-                        <div className="col-span-4 sm:col-span-2">
+                        <div className="hidden">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                             GST (%)
                           </label>
@@ -1018,7 +1018,7 @@ const Sales = () => {
                         </div>
 
                         {/* Unit Price */}
-                        <div className="col-span-6 sm:col-span-2">
+                        <div className="hidden">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                             Rate (₹) *
                           </label>
@@ -1032,7 +1032,7 @@ const Sales = () => {
                         </div>
 
                         {/* Quantity */}
-                        <div className="col-span-4 sm:col-span-2">
+                        <div className="col-span-10 sm:col-span-3">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                             Qty
                           </label>
@@ -1076,11 +1076,11 @@ const Sales = () => {
 
               {/* Dynamic Live Calculation Card */}
               <div className="p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl space-y-2">
-                <div className="flex justify-between text-xs text-gray-600">
+                <div className="hidden flex justify-between text-xs text-gray-600">
                   <span>Subtotal Amount:</span>
                   <span className="font-semibold text-gray-900">₹{calculatedSubTotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-xs text-emerald-800">
+                <div className="hidden flex justify-between text-xs text-emerald-800">
                   <span className="flex items-center gap-1">
                     Total GST / Tax:
                   </span>
