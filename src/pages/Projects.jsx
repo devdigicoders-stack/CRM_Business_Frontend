@@ -63,8 +63,10 @@ const Projects = () => {
     
     const [viewProjectModal, setViewProjectModal] = useState({ isOpen: false, project: null });
     const [approveModal, setApproveModal] = useState({ isOpen: false, task: null });
-    const [assignModal, setAssignModal] = useState({ isOpen: false, taskId: null });
+    const [assignModal, setAssignModal] = useState({ isOpen: false, taskId: null, projectId: null });
     const [assigneeId, setAssigneeId] = useState('');
+    const [projectDocuments, setProjectDocuments] = useState([]);
+    const [selectedReferenceDocs, setSelectedReferenceDocs] = useState([]);
     const [users, setUsers] = useState([]);
     
     const [approveStatus, setApproveStatus] = useState('Approved');
@@ -171,10 +173,12 @@ const Projects = () => {
         e.preventDefault();
         try {
             await apiClient.put(`/operations/tasks/${assignModal.taskId}/assign`, {
-                assignedTo: assigneeId
+                assignedTo: assigneeId,
+                referenceDocuments: selectedReferenceDocs
             });
             toast.success('Task assigned successfully!');
-            setAssignModal({ isOpen: false, taskId: null });
+            setAssignModal({ isOpen: false, taskId: null, projectId: null });
+            setSelectedReferenceDocs([]);
             
             // Re-fetch tasks
             const taskRes = await apiClient.get('/operations/tasks');
@@ -230,14 +234,16 @@ const Projects = () => {
                         Manage converted deals and track project execution stages.
                     </p>
                 </div>
-                <button
-                    onClick={handleOpenCreateModal}
-                    className="bg-[#0B3A2C] hover:bg-[#124b39] text-white px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm font-semibold text-sm inline-flex items-center gap-1.5 sm:gap-2 shrink-0"
-                >
-                    <Plus className="w-4 h-4 shrink-0" />
-                    <span className="hidden sm:inline">Create Project</span>
-                    <span className="sm:hidden">Create</span>
-                </button>
+                {userProfile?.role?.name !== 'Customer' && (
+                    <button
+                        onClick={handleOpenCreateModal}
+                        className="bg-[#0B3A2C] hover:bg-[#124b39] text-white px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm font-semibold text-sm inline-flex items-center gap-1.5 sm:gap-2 shrink-0"
+                    >
+                        <Plus className="w-4 h-4 shrink-0" />
+                        <span className="hidden sm:inline">Create Project</span>
+                        <span className="sm:hidden">Create</span>
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-none shadow-sm border border-gray-200 overflow-hidden">
@@ -264,6 +270,8 @@ const Projects = () => {
                                     <th className="py-3.5 px-4">Customer</th>
                                     <th className="py-3.5 px-4">Ops Head</th>
                                     <th className="py-3.5 px-4">Workflow Stage</th>
+                                    <th className="py-3.5 px-4">Total Price</th>
+                                    <th className="py-3.5 px-4">Amount Paid</th>
                                     <th className="py-3.5 px-4">Step</th>
                                     <th className="py-3.5 px-4">Status</th>
                                     <th className="py-3.5 px-4 text-center">Action</th>
@@ -292,6 +300,12 @@ const Projects = () => {
                                         </td>
                                         <td className="py-3.5 px-4 text-gray-600 font-medium">
                                             {project.workflowStage}
+                                        </td>
+                                        <td className="py-3.5 px-4 font-bold text-gray-900">
+                                            ₹{project.paymentData?.totalAmount?.toLocaleString('en-IN') || '0'}
+                                        </td>
+                                        <td className="py-3.5 px-4 font-bold text-green-600">
+                                            ₹{project.paymentData?.paidAmount?.toLocaleString('en-IN') || '0'}
                                         </td>
                                         <td className="py-3.5 px-4 font-bold text-gray-900">
                                             {project.currentStep} / {totalSteps || '?'}
@@ -487,7 +501,13 @@ const Projects = () => {
                                                 {/* Assign Task Button */}
                                                 {hasPermission('create_task') && task.status === 'Pending' && task.project?.currentStep === task.stepNumber && (
                                                     <button
-                                                        onClick={() => setAssignModal({ isOpen: true, taskId: task._id })}
+                                                        onClick={() => {
+                                                            setAssignModal({ isOpen: true, taskId: task._id, projectId: viewProjectModal.project._id });
+                                                            // Fetch project documents
+                                                            apiClient.get(`/operations/projects/${viewProjectModal.project._id}/documents`)
+                                                                .then(res => setProjectDocuments(res.data))
+                                                                .catch(err => console.error("Failed to fetch project docs", err));
+                                                        }}
                                                         className="px-3 py-1 bg-amber-500 text-white text-[10px] uppercase font-bold rounded hover:bg-amber-600 transition-colors"
                                                     >
                                                         Assign Task
@@ -683,7 +703,10 @@ const Projects = () => {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-gray-900">Assign Task</h2>
                         <button 
-                            onClick={() => setAssignModal({ isOpen: false, taskId: null })}
+                            onClick={() => {
+                                setAssignModal({ isOpen: false, taskId: null, projectId: null });
+                                setSelectedReferenceDocs([]);
+                            }}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                         >
                             <X className="w-5 h-5" />
@@ -704,8 +727,43 @@ const Projects = () => {
                         ))}
                         </select>
                     </div>
-                    <div className="flex justify-end gap-2">
-                        <button type="button" onClick={() => setAssignModal({ isOpen: false, taskId: null })} className="px-4 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
+                    
+                    {projectDocuments.length > 0 && (
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-gray-700 mb-2">Attach Reference Documents</label>
+                            <div className="max-h-40 overflow-y-auto space-y-2 border border-gray-100 rounded-lg p-2 bg-gray-50">
+                                {projectDocuments.map((doc, idx) => {
+                                    const isSelected = selectedReferenceDocs.some(d => d.fileUrl === doc.fileUrl);
+                                    return (
+                                        <label key={idx} className={`flex items-center gap-2 p-2 rounded cursor-pointer border ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-transparent hover:bg-gray-100'}`}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isSelected}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedReferenceDocs([...selectedReferenceDocs, { documentName: doc.documentName, fileUrl: doc.fileUrl }]);
+                                                    } else {
+                                                        setSelectedReferenceDocs(selectedReferenceDocs.filter(d => d.fileUrl !== doc.fileUrl));
+                                                    }
+                                                }}
+                                                className="rounded text-emerald-600 focus:ring-emerald-500"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-semibold text-gray-800">{doc.documentName}</span>
+                                                <span className="text-[10px] text-gray-500">Source: {doc.source}</span>
+                                            </div>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 mt-4">
+                        <button type="button" onClick={() => {
+                            setAssignModal({ isOpen: false, taskId: null, projectId: null });
+                            setSelectedReferenceDocs([]);
+                        }} className="px-4 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
                         <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-[#0B3A2C] text-white rounded-lg hover:bg-opacity-90 transition-colors">Confirm Assign</button>
                     </div>
                     </form>

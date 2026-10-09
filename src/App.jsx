@@ -30,6 +30,7 @@ import PublicQuotationView from './pages/PublicQuotationView';
 import Products from './pages/Products';
 import Projects from './pages/Projects';
 import Payments from './pages/Payments';
+import CustomerDocuments from './pages/CustomerDocuments';
 
 import './App.css';
 
@@ -61,6 +62,7 @@ function App() {
           <Route path="my-expenses" element={<MyExpenses />} />
           <Route path="manage-expenses" element={<ManageExpenses />} />
           <Route path="payments" element={<Payments />} />
+          <Route path="documents" element={<CustomerDocuments />} />
           <Route path="roles" element={<Roles />} />
           <Route path="departments" element={<Departments />} />
           <Route path="task-templates" element={<TaskTemplates />} />

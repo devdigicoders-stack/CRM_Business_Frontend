@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload } from 'lucide-react';
+import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import apiClient from '../api/axiosConfig';
@@ -391,6 +391,22 @@ const Tasks = () => {
                 )}
               </div>
 
+              {submitModal.task?.referenceDocuments?.length > 0 && (
+                <div className="mb-5 p-4 bg-emerald-50 border border-emerald-100 rounded-lg">
+                  <h3 className="font-bold text-xs text-emerald-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Eye className="w-4 h-4" /> Reference Documents (From Admin)
+                  </h3>
+                  <div className="space-y-2">
+                    {submitModal.task.referenceDocuments.map((doc, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white border border-emerald-100 p-2.5 rounded-xl">
+                        <span className="text-sm font-medium text-gray-700">{doc.documentName}</span>
+                        <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">View Link</a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmitWork}>
                 <div className="mb-6">
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">Remarks (Optional)</label>
@@ -521,6 +537,20 @@ const Tasks = () => {
                         ) : (
                           <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Pending</span>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {viewModal.task.referenceDocuments?.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Reference Documents</p>
+                  <div className="space-y-2">
+                    {viewModal.task.referenceDocuments.map((doc, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 p-2.5 rounded-xl">
+                        <span className="text-sm font-medium text-emerald-800">{doc.documentName}</span>
+                        <a href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-700 bg-white border border-emerald-200 px-2 py-1 rounded-lg">View File</a>
                       </div>
                     ))}
                   </div>

@@ -59,6 +59,7 @@ const Leads = () => {
     contactNumber: '',
     email: '',
     companyName: '',
+    customerPassword: '',
     status: 'Pending'
   });
 
@@ -164,7 +165,7 @@ const Leads = () => {
   const openAddModal = () => {
     setModalMode('add');
     setFormData({
-      customerName: '', contactNumber: '', email: '', companyName: '', status: 'Pending'
+      customerName: '', contactNumber: '', email: '', companyName: '', customerPassword: '', status: 'Pending'
     });
     setLeadDocuments({});
     setSelectedLead(null);
@@ -179,6 +180,7 @@ const Leads = () => {
       contactNumber: lead.contactNumber || '',
       email: lead.email || '',
       companyName: lead.companyName || '',
+      customerPassword: lead.customerPassword || '',
       status: lead.status || 'New'
     });
     setLeadDocuments({});
@@ -209,6 +211,7 @@ const Leads = () => {
         payload.append('contactNumber', formData.contactNumber);
         payload.append('email', formData.email);
         payload.append('companyName', formData.companyName);
+        payload.append('customerPassword', formData.customerPassword);
         payload.append('status', formData.status);
         
         Object.keys(leadDocuments).forEach(docId => {
@@ -545,6 +548,14 @@ const Leads = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
                   <input type="text" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm" placeholder="+91 9876543210" />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Login Password</label>
+                  <input type="text" name="customerPassword" value={formData.customerPassword} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm" placeholder="e.g. 123456" />
+                  <p className="text-[10px] text-gray-400 mt-1">Used automatically for customer account when Closed-Won</p>
                 </div>
               </div>
               

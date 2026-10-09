@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, UserCircle, Briefcase, CheckSquare, 
     Calendar as CalendarIcon, Shield, Building2,
-    Settings, Bell, User, Menu, LogOut, Key, ClipboardList, Trophy, Package, CreditCard, Wallet, Receipt
+    Settings, Bell, User, Menu, LogOut, Key, ClipboardList, Trophy, Package, CreditCard, Wallet, Receipt, FileText
 } from 'lucide-react';
 import apiClient from '../api/axiosConfig';
 
@@ -13,10 +13,12 @@ const navItems = [
     { name: 'Leads', path: '/dashboard/leads', icon: UserCircle, permission: 'view_leads' },
     { name: 'Quotation', path: '/dashboard/sales', icon: Briefcase, permission: 'view_quotations' },
     { name: 'Projects', path: '/dashboard/projects', icon: Briefcase, permission: 'view_projects' },
-    { name: 'Tasks & Activities', path: '/dashboard/tasks', icon: CheckSquare, permission: null },
+    { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare, permission: null },
+
     { name: 'Calendar', path: '/dashboard/calendar', icon: CalendarIcon, permission: 'view_calendar' },
     { name: 'Products', path: '/dashboard/products', icon: Package, permission: 'manage_products' },
     { name: 'Payments', path: '/dashboard/payments', icon: CreditCard, permission: 'view_payments' },
+    { name: 'My Documents', path: '/dashboard/documents', icon: FileText, permission: 'view_projects' },
     { name: 'Users', path: '/dashboard/users', icon: Shield, permission: 'view_users' },
     { name: 'Incentives', path: '/dashboard/incentives', icon: Trophy, permission: 'add_incentive' },
     { name: 'Roles & Permissions', path: '/dashboard/roles', icon: Key, permission: 'view_roles' },
@@ -101,8 +103,19 @@ const DashboardLayout = () => {
                     {navItems.filter(item => {
                         const isAdmin = user?.role?.name === 'Admin';
                         const isSalesExec = user?.role?.name === 'Sales Executive';
+                        const isCustomer = user?.role?.name === 'Customer';
                         const userPermissions = user?.role?.permissions || [];
                         const hasManageLeads = isAdmin || userPermissions.includes('manage_leads');
+
+                        // Hide specific tabs from Customers
+                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses'].includes(item.name)) {
+                            return false;
+                        }
+
+                        // Show Projects, Payments, Documents tab for Customers
+                        if (isCustomer && (item.name === 'Projects' || item.name === 'Payments' || item.name === 'My Documents')) {
+                            return true;
+                        }
 
                         // 'Leads' → hide from Sales Executive if they only have my_leads_only, but show if they actually have view_leads or create_lead
                         if (item.permission === 'view_leads') {
@@ -111,6 +124,11 @@ const DashboardLayout = () => {
 
                         if (item.name === 'Users') {
                             return isAdmin || userPermissions.includes('manage_employees');
+                        }
+
+                        // Hide Tasks from Admin and Operation Head
+                        if (item.name === 'Tasks' && (user?.role?.name === 'Admin' || user?.role?.name === 'Operation Head')) {
+                            return false;
                         }
 
                         // No permission required = show to all
@@ -211,10 +229,14 @@ const DashboardLayout = () => {
                             const userPermissions = user?.role?.permissions || [];
                             let hasAccess = false;
 
+                            const isCustomer = user?.role?.name === 'Customer';
+
                             if (currentRoute.permission === 'view_leads') {
                                 hasAccess = isAdmin || userPermissions.includes('view_leads') || userPermissions.includes('create_lead');
                             } else if (currentRoute.name === 'Users') {
                                 hasAccess = isAdmin || userPermissions.includes('manage_employees');
+                            } else if (isCustomer && (currentRoute.name === 'Projects' || currentRoute.name === 'Payments' || currentRoute.name === 'My Documents')) {
+                                hasAccess = true;
                             } else if (!currentRoute.permission || isAdmin) {
                                 hasAccess = true;
                             } else {

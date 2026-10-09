@@ -697,6 +697,33 @@ const Sales = () => {
                           <Download className="w-3.5 h-3.5" />
                         </button>
 
+                        {/* WhatsApp Share Button */}
+                        <button
+                          onClick={() => {
+                            const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
+                            const pdfLink = `${baseUrl}/api/sales/quotations/public/${encodeURIComponent(q.quotationNumber)}/pdf`;
+                            const contact = q.lead?.contactNumber || '';
+                            const customerName = q.lead?.customerName || 'Customer';
+                            
+                            // Clean phone number (extract digits)
+                            let cleanPhone = contact.replace(/\D/g, '');
+                            if(cleanPhone.length === 10) cleanPhone = '91' + cleanPhone; // Add India country code if 10 digits
+                            
+                            const message = `Hello ${customerName},\n\nPlease find your requested Quotation (${q.quotationNumber}) from RAM MILAN SINGH CHARITABLE TRUST here:\n${pdfLink}\n\nThank you!`;
+                            
+                            // Open WhatsApp link
+                            const whatsappUrl = cleanPhone 
+                                ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+                                : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                                
+                            window.open(whatsappUrl, '_blank');
+                          }}
+                          title="Share via WhatsApp"
+                          className="p-1.5 text-[#25D366] hover:bg-[#25D366]/10 rounded-lg transition-colors border border-[#25D366]/30"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-whatsapp"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><path d="M16.5 16c0-1-.5-1.5-1.5-1.5s-1.5.5-2 1c-.5.5-1.5 0-3-1.5s-2-2.5-1.5-3c.5-.5 1-1 1-2s-.5-1.5-1.5-1.5-1.5.5-1.5 1.5c0 1.5 1 3 3 5s3.5 3 5 3c1 0 1.5-.5 1.5-1.5z"/></svg>
+                        </button>
+
                         {/* Edit Quotation Button */}
                         <button
                           onClick={() => handleOpenEditModal(q)}
@@ -1110,7 +1137,7 @@ const Sales = () => {
                   <span>
                     {isSubmittingQuote 
                       ? (editingQuotationId ? 'Updating...' : 'Creating...') 
-                      : (editingQuotationId ? 'Save & Update Quotation' : 'Submit for Manager Approval')}
+                      : (editingQuotationId ? 'Save & Update Quotation' : 'Create Quotation')}
                   </span>
                 </button>
               </div>

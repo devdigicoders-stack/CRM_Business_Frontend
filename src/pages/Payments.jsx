@@ -288,12 +288,14 @@ const Payments = () => {
                         <Plus className="w-3.5 h-3.5" /> Add Transaction
                       </button>
                     )}
-                    <button
-                      onClick={() => { setFollowModal({ isOpen: true, paymentId: payment._id }); setFollowForm({ text: '', nextFollowUpDate: '' }); }}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-1.5 transition-colors"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> Add Follow-Up
-                    </button>
+                    {userProfile?.role?.name !== 'Customer' && (
+                      <button
+                        onClick={() => { setFollowModal({ isOpen: true, paymentId: payment._id }); setFollowForm({ text: '', nextFollowUpDate: '' }); }}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-1.5 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Add Follow-Up
+                      </button>
+                    )}
                   </div>
 
                   {/* Transactions */}
