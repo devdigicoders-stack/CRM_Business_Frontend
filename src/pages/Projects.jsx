@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
+import { Link } from 'react-router-dom';
 
 const CountdownTimer = ({ dueDate, status, submittedAt, opsHeadReminderHours }) => {
   const [timeLeft, setTimeLeft] = useState('');
@@ -84,6 +85,10 @@ const Projects = () => {
         quotationId: '',
         remarks: ''
     });
+
+    const [equipmentModal, setEquipmentModal] = useState({ isOpen: false, project: null });
+    const [equipments, setEquipments] = useState([{ itemName: '', serialNumber: '', quantity: 1 }]);
+    const [isSavingEquipments, setIsSavingEquipments] = useState(false);
 
     const fetchProjects = async () => {
         try {
@@ -221,6 +226,37 @@ const Projects = () => {
         }
     };
 
+    // Equipment Handlers
+    const handleAddEquipmentRow = () => {
+        setEquipments([...equipments, { itemName: '', serialNumber: '', quantity: 1 }]);
+    };
+
+    const handleRemoveEquipmentRow = (index) => {
+        setEquipments(equipments.filter((_, i) => i !== index));
+    };
+
+    const handleEquipmentChange = (index, field, value) => {
+        const newEq = [...equipments];
+        newEq[index][field] = value;
+        setEquipments(newEq);
+    };
+
+    const handleSaveEquipments = async (e) => {
+        e.preventDefault();
+        try {
+            setIsSavingEquipments(true);
+            await apiClient.put(`/operations/projects/${equipmentModal.project._id}/equipment`, { equipments });
+            toast.success("Equipments saved successfully!");
+            setEquipmentModal({ isOpen: false, project: null });
+            fetchProjects();
+        } catch (err) {
+            console.error('Error saving equipments:', err);
+            toast.error(err.response?.data?.message || 'Failed to save equipments');
+        } finally {
+            setIsSavingEquipments(false);
+        }
+    };
+
     return (
         <div className="space-y-6 relative">
             <div className="flex flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
@@ -320,12 +356,37 @@ const Projects = () => {
                                             </span>
                                         </td>
                                         <td className="py-3.5 px-4 text-center">
-                                            <button
-                                                onClick={() => setViewProjectModal({ isOpen: true, project })}
-                                                className="px-3 py-1.5 bg-[#0B3A2C]/10 text-[#0B3A2C] hover:bg-[#0B3A2C] hover:text-white text-xs font-bold rounded transition-colors inline-flex items-center gap-1.5"
-                                            >
-                                                View Tasks
-                                            </button>
+                                            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                                                <button
+                                                    onClick={() => setViewProjectModal({ isOpen: true, project })}
+                                                    className="px-3 py-1.5 bg-[#0B3A2C]/10 text-[#0B3A2C] hover:bg-[#0B3A2C] hover:text-white text-[10px] font-bold rounded transition-colors"
+                                                >
+                                                    Tasks
+                                                </button>
+                                                
+                                                {/* Manage Equipments - Only Ops Head/Admin */}
+                                                {hasPermission('manage_project_workflow') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setEquipments(project.installedEquipments?.length ? project.installedEquipments : [{ itemName: '', serialNumber: '', quantity: 1 }]);
+                                                            setEquipmentModal({ isOpen: true, project });
+                                                        }}
+                                                        className="px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-500 hover:text-white text-[10px] font-bold rounded transition-colors"
+                                                    >
+                                                        Hardware
+                                                    </button>
+                                                )}
+                                                
+                                                {project.status !== 'Pending' && (
+                                                    <Link
+                                                        to={`/dashboard/projects/${project._id}/receipt`}
+                                                        target="_blank"
+                                                        className="px-3 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white text-[10px] font-bold rounded transition-colors inline-flex items-center"
+                                                    >
+                                                        Receipt
+                                                    </Link>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 )})}
@@ -768,6 +829,103 @@ const Projects = () => {
                     </div>
                     </form>
                 </div>
+                </div>
+            )}
+
+            {/* Manage Equipments Modal */}
+            {equipmentModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-none shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border-t-4 border-amber-500">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/80">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">Manage Installed Hardware</h2>
+                                <p className="text-xs text-gray-500 mt-0.5">Project: <span className="font-semibold text-gray-700">{equipmentModal.project?.customerName}</span></p>
+                            </div>
+                            <button 
+                                onClick={() => setEquipmentModal({ isOpen: false, project: null })}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-none transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 overflow-y-auto">
+                            <form onSubmit={handleSaveEquipments}>
+                                <div className="space-y-4 mb-6">
+                                    {equipments.map((eq, idx) => (
+                                        <div key={idx} className="flex flex-col sm:flex-row gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                            <div className="flex-1 w-full">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Item Name</label>
+                                                <input 
+                                                    type="text" 
+                                                    required
+                                                    value={eq.itemName}
+                                                    onChange={(e) => handleEquipmentChange(idx, 'itemName', e.target.value)}
+                                                    placeholder="e.g. Solar Battery 150Ah"
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-amber-500"
+                                                />
+                                            </div>
+                                            <div className="flex-1 w-full">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Serial Number</label>
+                                                <input 
+                                                    type="text" 
+                                                    required
+                                                    value={eq.serialNumber}
+                                                    onChange={(e) => handleEquipmentChange(idx, 'serialNumber', e.target.value)}
+                                                    placeholder="e.g. SN-12345678"
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-amber-500"
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-20">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Qty</label>
+                                                <input 
+                                                    type="number" 
+                                                    min="1"
+                                                    required
+                                                    value={eq.quantity}
+                                                    onChange={(e) => handleEquipmentChange(idx, 'quantity', e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-amber-500"
+                                                />
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={() => handleRemoveEquipmentRow(idx)}
+                                                className="p-2 mb-0.5 text-red-500 hover:bg-red-100 rounded transition-colors"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <button
+                                    type="button"
+                                    onClick={handleAddEquipmentRow}
+                                    className="mb-6 px-3 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded flex items-center gap-1.5 transition-colors"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Another Item
+                                </button>
+
+                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setEquipmentModal({ isOpen: false, project: null })} 
+                                        className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        disabled={isSavingEquipments}
+                                        className="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded transition-colors flex items-center gap-2"
+                                    >
+                                        {isSavingEquipments ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                        Save Hardware Details
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

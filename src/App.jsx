@@ -31,6 +31,7 @@ import Products from './pages/Products';
 import Projects from './pages/Projects';
 import Payments from './pages/Payments';
 import CustomerDocuments from './pages/CustomerDocuments';
+import ProjectReceipt from './pages/ProjectReceipt';
 
 import './App.css';
 
@@ -66,6 +67,7 @@ function App() {
           <Route path="roles" element={<Roles />} />
           <Route path="departments" element={<Departments />} />
           <Route path="task-templates" element={<TaskTemplates />} />
+          <Route path="projects/:id/receipt" element={<ProjectReceipt />} />
 
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
