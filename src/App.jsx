@@ -15,6 +15,7 @@ import ClosedWonLeads from './pages/ClosedWonLeads';
 import Tasks from './pages/Tasks';
 import Calendar from './pages/Calendar';
 import Users from './pages/Users';
+import Customers from './pages/Customers';
 import Roles from './pages/Roles';
 import Departments from './pages/Departments';
 import TaskTemplates from './pages/TaskTemplates';
@@ -58,6 +59,7 @@ function App() {
           <Route path="tasks" element={<Tasks />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="users" element={<Users />} />
+          <Route path="customers" element={<Customers />} />
           <Route path="incentives" element={<Incentives />} />
           <Route path="my-earnings" element={<MyEarnings />} />
           <Route path="my-expenses" element={<MyExpenses />} />

@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import {
   Search, Eye, X, UserCheck, ClipboardList, Phone, Mail,
-  Building2, Tag, Calendar, MessageSquare, ChevronRight, FileText, ExternalLink
+  Building2, Tag, Calendar, MessageSquare, ChevronRight, FileText, ExternalLink, Trash2
 } from 'lucide-react';
 import apiClient from '../api/axiosConfig';
+import Swal from 'sweetalert2';
 
 const getStatusBadge = (status) => {
   const map = {
@@ -64,7 +65,7 @@ const MyLeads = () => {
   const [docType, setDocType] = useState('Aadhar');
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
-  const tabs = ['All', 'New', 'Contacted', 'Interested', 'Follow-up', 'Quotation Sent', 'Negotiation', 'Closed-Won', 'Closed-Lost'];
+  const tabs = ['All', 'New', 'Contacted', 'Interested', 'Follow-up', 'Quotation Sent', 'Negotiation', 'Closed-Lost'];
 
   const fetchProfile = async () => {
     try {
@@ -130,6 +131,33 @@ const MyLeads = () => {
       setIsViewModalOpen(true);
     } catch (error) {
       toast.error('Failed to load lead details');
+    }
+  };
+
+  const handleDeleteLead = async (leadId, customerName) => {
+    const result = await Swal.fire({
+      title: 'Delete Lead?',
+      text: `Are you sure you want to delete "${customerName}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete lead',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await apiClient.delete(`/sales/leads/${leadId}`);
+        toast.success('Lead deleted successfully');
+        fetchMyLeads(currentPage, activeTab, searchQuery, pageSize);
+        if (isViewModalOpen && selectedLead?._id === leadId) {
+          setIsViewModalOpen(false);
+        }
+      } catch (error) {
+        console.error('Error deleting lead:', error);
+        toast.error(error.response?.data?.message || 'Failed to delete lead');
+      }
     }
   };
 
@@ -209,12 +237,15 @@ const MyLeads = () => {
     }
   };
 
+  // Filter out Closed-Won or converted deals (they belong to Operations)
+  const activeLeads = leads.filter(l => l.status !== 'Closed-Won' && !l.isConverted);
+
   // Stats calculation
   const stats = [
-    { label: 'Total Assigned', value: totalLeads, color: '#0B3A2C', icon: ClipboardList },
-    { label: 'New', value: leads.filter(l => l.status === 'New').length, color: '#3B82F6', icon: Tag },
-    { label: 'Follow-up', value: leads.filter(l => l.status === 'Follow-up' || l.status === 'Follow Up').length, color: '#F59E0B', icon: Phone },
-    { label: 'Closed-Won', value: leads.filter(l => l.status === 'Closed-Won').length, color: '#10B981', icon: UserCheck },
+    { label: 'Total Assigned', value: activeLeads.length, color: '#0B3A2C', icon: ClipboardList },
+    { label: 'New', value: activeLeads.filter(l => l.status === 'New').length, color: '#3B82F6', icon: Tag },
+    { label: 'Follow-up', value: activeLeads.filter(l => l.status === 'Follow-up' || l.status === 'Follow Up').length, color: '#F59E0B', icon: Phone },
+    { label: 'Negotiation', value: activeLeads.filter(l => l.status === 'Negotiation').length, color: '#10B981', icon: UserCheck },
   ];
 
   return (
@@ -309,8 +340,8 @@ const MyLeads = () => {
                     </div>
                   </td>
                 </tr>
-              ) : leads.length > 0 ? (
-                leads.map((lead) => (
+              ) : activeLeads.length > 0 ? (
+                activeLeads.map((lead) => (
                   <tr key={lead._id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -368,12 +399,21 @@ const MyLeads = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => openViewModal(lead)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#0B3A2C]/5 text-[#0B3A2C] rounded-lg hover:bg-[#0B3A2C] hover:text-white transition-all border border-[#0B3A2C]/10"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> View
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openViewModal(lead)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#0B3A2C]/5 text-[#0B3A2C] rounded-lg hover:bg-[#0B3A2C] hover:text-white transition-all border border-[#0B3A2C]/10"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View
+                        </button>
+                        <button
+                          onClick={() => handleDeleteLead(lead._id, lead.customerName)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                          title="Delete Lead"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -456,12 +496,22 @@ const MyLeads = () => {
                   <p className="text-sm text-gray-500">{selectedLead.companyName || 'No Company'}</p>
                 </div>
               </div>
-              <button
-                onClick={() => { setIsViewModalOpen(false); setRemarkText(''); }}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDeleteLead(selectedLead._id, selectedLead.customerName)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border border-red-200"
+                  title="Delete Lead"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Lead
+                </button>
+                <button
+                  onClick={() => { setIsViewModalOpen(false); setRemarkText(''); }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 space-y-5">

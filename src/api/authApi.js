@@ -24,9 +24,13 @@ export const changePassword = async (passwordData) => {
     return response.data;
 };
 
-// Admin: User Management APIs
 export const getUsers = async () => {
     const response = await apiClient.get('/auth/users');
+    return response.data;
+};
+
+export const getCustomers = async () => {
+    const response = await apiClient.get('/auth/customers');
     return response.data;
 };
 

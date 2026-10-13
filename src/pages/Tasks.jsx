@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye } from 'lucide-react';
+import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import apiClient from '../api/axiosConfig';
@@ -60,6 +60,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [userProfile, setUserProfile] = useState(null);
   const [permissions, setPermissions] = useState([]);
@@ -199,6 +200,18 @@ const Tasks = () => {
     return permissions.includes(perm);
   };
 
+  const filteredTasks = tasks.filter(task => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (task.project?.customerName && task.project.customerName.toLowerCase().includes(q)) ||
+      (task.taskName && task.taskName.toLowerCase().includes(q)) ||
+      (task.department?.name && task.department.name.toLowerCase().includes(q)) ||
+      (task.assignedTo?.name && task.assignedTo.name.toLowerCase().includes(q)) ||
+      (task.status && task.status.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
@@ -208,6 +221,32 @@ const Tasks = () => {
             Project Tasks
           </h1>
           <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Manage project workflows and approvals</p>
+        </div>
+      </div>
+
+      {/* Search Filter */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search tasks by customer, task name, assignee..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
+          />
+          {searchTerm && (
+            <button 
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-semibold"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="text-xs text-gray-500 font-medium">
+          Showing <span className="font-bold text-gray-900">{filteredTasks.length}</span> of {tasks.length} Tasks
         </div>
       </div>
 
@@ -233,8 +272,14 @@ const Tasks = () => {
                 <tr>
                   <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No tasks found.</td>
                 </tr>
+              ) : filteredTasks.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                    No tasks match your search "{searchTerm}".
+                  </td>
+                </tr>
               ) : (
-                tasks.map((task) => (
+                filteredTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">{task.project?.customerName}</div>

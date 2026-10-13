@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Receipt, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Plus, Receipt, Clock, CheckCircle, XCircle, AlertCircle, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
 
 const MyExpenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -87,6 +88,17 @@ const MyExpenses = () => {
     }
   };
 
+  const filteredExpenses = expenses.filter(expense => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (expense.reason && expense.reason.toLowerCase().includes(q)) ||
+      (expense.status && expense.status.toLowerCase().includes(q)) ||
+      (expense.amount && expense.amount.toString().includes(q)) ||
+      (expense.managerRemark && expense.managerRemark.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -103,6 +115,32 @@ const MyExpenses = () => {
         </button>
       </div>
 
+      {/* Search Filter */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search by reason, status, amount..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
+          />
+          {searchTerm && (
+            <button 
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-semibold"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="text-xs text-gray-500 font-medium">
+          Showing <span className="font-bold text-gray-900">{filteredExpenses.length}</span> of {expenses.length} Claims
+        </div>
+      </div>
+
       {/* Expenses List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {isLoading ? (
@@ -114,6 +152,10 @@ const MyExpenses = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">No expenses found</h3>
             <p className="text-gray-500">You haven't requested any reimbursements yet.</p>
+          </div>
+        ) : filteredExpenses.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">
+            <p>No claims match your search "{searchTerm}".</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -128,7 +170,7 @@ const MyExpenses = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {expenses.map((expense) => (
+                {filteredExpenses.map((expense) => (
                   <tr key={expense._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-600 whitespace-nowrap">
                       {new Date(expense.createdAt).toLocaleDateString('en-IN', {

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye } from 'lucide-react';
+import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye, Trash2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
 import { Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 const CountdownTimer = ({ dueDate, status, submittedAt, opsHeadReminderHours }) => {
   const [timeLeft, setTimeLeft] = useState('');
@@ -61,6 +62,7 @@ const Projects = () => {
     const [leads, setLeads] = useState([]);
     const [allTasks, setAllTasks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     
     const [viewProjectModal, setViewProjectModal] = useState({ isOpen: false, project: null });
     const [approveModal, setApproveModal] = useState({ isOpen: false, task: null });
@@ -143,9 +145,35 @@ const Projects = () => {
         fetchUsers();
     }, []);
 
+    const isSuperAdmin = userProfile?.role?.name === 'Admin' || userProfile?.role?.name === 'Super Admin';
+
     const hasPermission = (perm) => {
-        if (userProfile?.role?.name === 'Admin') return true;
+        if (isSuperAdmin) return true;
         return permissions.includes(perm);
+    };
+
+    const handleDeleteProject = async (projectId, customerName) => {
+        const result = await Swal.fire({
+            title: 'Delete Project?',
+            text: `Are you sure you want to delete the project for "${customerName}"? All related tasks and project records will be permanently removed.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete project',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await apiClient.delete(`/operations/projects/${projectId}`);
+                toast.success('Project deleted successfully');
+                fetchProjects();
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                toast.error(error.response?.data?.message || 'Failed to delete project');
+            }
+        }
     };
 
     const handleApproveSubmit = async (e) => {
@@ -282,6 +310,42 @@ const Projects = () => {
                 )}
             </div>
 
+            {/* Search Filter */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full sm:w-96">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                        type="text" 
+                        placeholder="Search projects by customer, phone, ops head, stage..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
+                    />
+                    {searchTerm && (
+                        <button 
+                            type="button"
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-semibold"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+                <div className="text-xs text-gray-500 font-medium">
+                    Showing <span className="font-bold text-gray-900">{projects.filter(p => {
+                        if (!searchTerm.trim()) return true;
+                        const q = searchTerm.toLowerCase();
+                        return (
+                            (p.customerName && p.customerName.toLowerCase().includes(q)) ||
+                            (p.lead?.contactNumber && p.lead.contactNumber.toLowerCase().includes(q)) ||
+                            (p.operationHead?.name && p.operationHead.name.toLowerCase().includes(q)) ||
+                            (p.workflowStage && p.workflowStage.toLowerCase().includes(q)) ||
+                            (p.status && p.status.toLowerCase().includes(q))
+                        );
+                    }).length}</span> of {projects.length} Projects
+                </div>
+            </div>
+
             <div className="bg-white rounded-none shadow-sm border border-gray-200 overflow-hidden">
                 {isLoading ? (
                     <div className="p-16 flex flex-col items-center justify-center">
@@ -296,6 +360,26 @@ const Projects = () => {
                         <h3 className="text-base font-bold text-gray-900 mb-1">No Projects Found</h3>
                         <p className="text-xs text-gray-500 max-w-sm mx-auto mb-5">
                             Create a new project from a closed won lead to get started.
+                        </p>
+                    </div>
+                ) : projects.filter(p => {
+                    if (!searchTerm.trim()) return true;
+                    const q = searchTerm.toLowerCase();
+                    return (
+                        (p.customerName && p.customerName.toLowerCase().includes(q)) ||
+                        (p.lead?.contactNumber && p.lead.contactNumber.toLowerCase().includes(q)) ||
+                        (p.operationHead?.name && p.operationHead.name.toLowerCase().includes(q)) ||
+                        (p.workflowStage && p.workflowStage.toLowerCase().includes(q)) ||
+                        (p.status && p.status.toLowerCase().includes(q))
+                    );
+                }).length === 0 ? (
+                    <div className="p-16 text-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-400">
+                            <Search className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-base font-bold text-gray-900 mb-1">No Matching Projects</h3>
+                        <p className="text-xs text-gray-500 max-w-sm mx-auto mb-5">
+                            No projects match your search "{searchTerm}".
                         </p>
                     </div>
                 ) : (
@@ -314,7 +398,17 @@ const Projects = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
-                                {projects.map(project => {
+                                {projects.filter(p => {
+                                    if (!searchTerm.trim()) return true;
+                                    const q = searchTerm.toLowerCase();
+                                    return (
+                                        (p.customerName && p.customerName.toLowerCase().includes(q)) ||
+                                        (p.lead?.contactNumber && p.lead.contactNumber.toLowerCase().includes(q)) ||
+                                        (p.operationHead?.name && p.operationHead.name.toLowerCase().includes(q)) ||
+                                        (p.workflowStage && p.workflowStage.toLowerCase().includes(q)) ||
+                                        (p.status && p.status.toLowerCase().includes(q))
+                                    );
+                                }).map(project => {
                                     const projectTasks = allTasks.filter(t => t.project?._id === project._id);
                                     const totalSteps = projectTasks.length;
                                     
@@ -385,6 +479,18 @@ const Projects = () => {
                                                     >
                                                         Receipt
                                                     </Link>
+                                                )}
+
+                                                {/* Super Admin Delete Project */}
+                                                {isSuperAdmin && (
+                                                    <button
+                                                        onClick={() => handleDeleteProject(project._id, project.customerName)}
+                                                        className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white text-[10px] font-bold rounded transition-colors inline-flex items-center gap-1"
+                                                        title="Delete Project (Super Admin Only)"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                        Delete
+                                                    </button>
                                                 )}
                                             </div>
                                         </td>

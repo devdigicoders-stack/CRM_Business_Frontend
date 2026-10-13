@@ -13,6 +13,7 @@ const navItems = [
     { name: 'Leads', path: '/dashboard/leads', icon: UserCircle, permission: 'view_leads' },
     { name: 'Quotation', path: '/dashboard/sales', icon: Briefcase, permission: 'view_quotations' },
     { name: 'Projects', path: '/dashboard/projects', icon: Briefcase, permission: 'view_projects' },
+    { name: 'Customers', path: '/dashboard/customers', icon: Users, permission: null },
     { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare, permission: null },
 
     { name: 'Calendar', path: '/dashboard/calendar', icon: CalendarIcon, permission: 'view_calendar' },
@@ -108,7 +109,7 @@ const DashboardLayout = () => {
                         const hasManageLeads = isAdmin || userPermissions.includes('manage_leads');
 
                         // Hide specific tabs from Customers
-                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses'].includes(item.name)) {
+                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses', 'Customers'].includes(item.name)) {
                             return false;
                         }
 
@@ -231,7 +232,9 @@ const DashboardLayout = () => {
 
                             const isCustomer = user?.role?.name === 'Customer';
 
-                            if (currentRoute.permission === 'view_leads') {
+                            if (currentRoute.name === 'Customers') {
+                                hasAccess = !isCustomer;
+                            } else if (currentRoute.permission === 'view_leads') {
                                 hasAccess = isAdmin || userPermissions.includes('view_leads') || userPermissions.includes('create_lead');
                             } else if (currentRoute.name === 'Users') {
                                 hasAccess = isAdmin || userPermissions.includes('manage_employees');

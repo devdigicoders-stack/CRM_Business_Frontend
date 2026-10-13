@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, Search, Edit2, Trash2, Shield, UserX, UserCheck, Key, User, Mail, Briefcase, Camera, Eye, Phone, MapPin, Building, Hash 
+  Plus, Search, Edit2, Trash2, Shield, UserX, UserCheck, Key, User, Mail, Briefcase, Camera, Eye, Phone, MapPin, Building, Hash, ChevronDown 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
@@ -28,6 +28,11 @@ const Users = () => {
   const fileInputRef = useRef(null);
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
+
+  // Searchable manager dropdown state
+  const [managerSearchTerm, setManagerSearchTerm] = useState('');
+  const [isManagerDropdownOpen, setIsManagerDropdownOpen] = useState(false);
+  const managerDropdownRef = useRef(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -116,12 +121,24 @@ const Users = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (managerDropdownRef.current && !managerDropdownRef.current.contains(event.target)) {
+        setIsManagerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const openAddModal = () => {
     setModalMode('add');
     setFormData({ 
       name: '', email: '', password: '', role: '', 
       phone: '', department: '', employeeId: '', company: '', location: '', reportingManager: '' 
     });
+    setManagerSearchTerm('');
+    setIsManagerDropdownOpen(false);
     setProfileImageFile(null);
     setProfileImagePreview(null);
     setSelectedUser(null);
@@ -143,6 +160,8 @@ const Users = () => {
       location: user.location || '',
       reportingManager: user.reportingManager ? user.reportingManager._id : ''
     });
+    setManagerSearchTerm('');
+    setIsManagerDropdownOpen(false);
     setProfileImageFile(null);
     setProfileImagePreview(user.profileImage ? `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${user.profileImage}` : null);
     setIsModalOpen(true);
@@ -243,10 +262,20 @@ const Users = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    // Exclude Customer role completely from Users table
+    if (user.role?.name === 'Customer') return false;
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (user.name && user.name.toLowerCase().includes(term)) ||
+      (user.email && user.email.toLowerCase().includes(term)) ||
+      (user.phone && user.phone.toLowerCase().includes(term)) ||
+      (user.department && user.department.toLowerCase().includes(term)) ||
+      (user.employeeId && user.employeeId.toLowerCase().includes(term)) ||
+      (user.role?.name && user.role.name.toLowerCase().includes(term))
+    );
+  });
 
   if (!hasAccess) {
     return (
@@ -284,11 +313,23 @@ const Users = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
             type="text" 
-            placeholder="Search by name or email..." 
+            placeholder="Search by name, email, phone, role, dept..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
+            className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
           />
+          {searchTerm && (
+            <button 
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-semibold"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="text-xs text-gray-500">
+          Total Staff: <span className="font-semibold text-gray-800">{filteredUsers.length}</span>
         </div>
       </div>
 
@@ -571,17 +612,95 @@ const Users = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Manager</label>
-                  <select 
-                    name="reportingManager"
-                    value={formData.reportingManager}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm appearance-none bg-white"
-                  >
-                    <option value="">Select a Manager (Optional)</option>
-                    {users.map(u => (
-                      <option key={u._id} value={u._id}>{u.name} ({u.role?.name || 'User'})</option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={managerDropdownRef}>
+                    <button 
+                      type="button"
+                      onClick={() => setIsManagerDropdownOpen(!isManagerDropdownOpen)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white text-left flex items-center justify-between transition-colors hover:border-gray-300"
+                    >
+                      <span className={formData.reportingManager ? "text-gray-900 font-medium" : "text-gray-400"}>
+                        {(() => {
+                          if (!formData.reportingManager) return "Select a Manager (Optional)";
+                          const mgr = users.find(u => u._id === formData.reportingManager);
+                          return mgr ? `${mgr.name} (${mgr.role?.name || 'Staff'})` : "Select a Manager (Optional)";
+                        })()}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isManagerDropdownOpen ? 'rotate-180 text-emerald-600' : ''}`} />
+                    </button>
+
+                    {isManagerDropdownOpen && (
+                      <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 shadow-xl rounded-md max-h-64 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                          <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <input 
+                            type="text" 
+                            placeholder="Search manager by name or role..." 
+                            value={managerSearchTerm}
+                            onChange={(e) => setManagerSearchTerm(e.target.value)}
+                            className="w-full text-xs bg-transparent focus:outline-none text-gray-800"
+                            autoFocus
+                          />
+                          {managerSearchTerm && (
+                            <button 
+                              type="button"
+                              onClick={() => setManagerSearchTerm('')}
+                              className="text-gray-400 hover:text-gray-600 text-xs"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                        <div className="overflow-y-auto max-h-52 divide-y divide-gray-50">
+                          <div 
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, reportingManager: '' }));
+                              setIsManagerDropdownOpen(false);
+                              setManagerSearchTerm('');
+                            }}
+                            className={`px-3 py-2 text-xs cursor-pointer hover:bg-emerald-50 transition-colors ${!formData.reportingManager ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-500 italic'}`}
+                          >
+                            — No Manager (Optional) —
+                          </div>
+                          {users
+                            .filter(u => u.role?.name !== 'Customer')
+                            .filter(u => modalMode === 'edit' ? u._id !== selectedUser?._id : true)
+                            .filter(u => {
+                              if (!managerSearchTerm.trim()) return true;
+                              const term = managerSearchTerm.toLowerCase();
+                              return (
+                                u.name?.toLowerCase().includes(term) ||
+                                u.email?.toLowerCase().includes(term) ||
+                                u.role?.name?.toLowerCase().includes(term) ||
+                                u.department?.toLowerCase().includes(term)
+                              );
+                            })
+                            .map(u => (
+                              <div 
+                                key={u._id}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, reportingManager: u._id }));
+                                  setIsManagerDropdownOpen(false);
+                                  setManagerSearchTerm('');
+                                }}
+                                className={`px-3 py-2 text-xs cursor-pointer hover:bg-emerald-50 flex items-center justify-between transition-colors ${
+                                  formData.reportingManager === u._id ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-gray-700'
+                                }`}
+                              >
+                                <div>
+                                  <span className="font-medium text-gray-900">{u.name}</span>
+                                  <span className="text-gray-500 ml-1.5 text-[11px]">({u.role?.name || 'Staff'})</span>
+                                </div>
+                                {u.department && (
+                                  <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded font-normal">
+                                    {u.department}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div>

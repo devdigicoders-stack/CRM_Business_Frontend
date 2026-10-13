@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, ArrowUpRight, ArrowDownRight, History, ShieldAlert } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownRight, History, ShieldAlert, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
 
@@ -7,6 +7,7 @@ const MyEarnings = () => {
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchMyEarnings();
@@ -52,6 +53,17 @@ const MyEarnings = () => {
     );
   }
 
+  const filteredTransactions = transactions.filter(txn => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (txn.remarks && txn.remarks.toLowerCase().includes(q)) ||
+      (txn.transactionType && txn.transactionType.toLowerCase().includes(q)) ||
+      (txn.amount && txn.amount.toString().includes(q)) ||
+      (txn.adminId?.name && txn.adminId.name.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -85,9 +97,31 @@ const MyEarnings = () => {
 
       {/* Transaction History */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
-        <div className="p-5 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
-          <History className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-bold text-gray-800">Transaction History</h3>
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
+          <div className="flex items-center gap-2">
+            <History className="w-5 h-5 text-gray-500" />
+            <h3 className="text-lg font-bold text-gray-800">Transaction History</h3>
+          </div>
+          
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search by remark, type, amount..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-8 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs bg-white"
+            />
+            {searchTerm && (
+              <button 
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-semibold"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -111,8 +145,14 @@ const MyEarnings = () => {
                     </div>
                   </td>
                 </tr>
+              ) : filteredTransactions.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                    <p>No transactions match "{searchTerm}".</p>
+                  </td>
+                </tr>
               ) : (
-                transactions.map((txn) => (
+                filteredTransactions.map((txn) => (
                   <tr key={txn._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-600 whitespace-nowrap">
                       {new Date(txn.createdAt).toLocaleString('en-IN', {

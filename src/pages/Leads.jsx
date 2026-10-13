@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { 
   Download, Plus, Search, Filter, 
-  MoreVertical, Edit3, ChevronDown, X, Eye, Upload, UserCheck, CheckSquare, Users, FileText, ExternalLink
+  MoreVertical, Edit3, ChevronDown, X, Eye, Upload, UserCheck, CheckSquare, Users, FileText, ExternalLink, Trash2
 } from 'lucide-react';
 import apiClient from '../api/axiosConfig';
 import Swal from 'sweetalert2';
@@ -76,7 +76,7 @@ const Leads = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
   
-  const tabs = ['All', 'Pending', 'Contacted', 'Interested', 'Follow-up', 'Quotation Sent', 'Negotiation', 'Closed-Won', 'Closed-Lost'];
+  const tabs = ['All', 'Pending', 'Contacted', 'Interested', 'Follow-up', 'Quotation Sent', 'Negotiation', 'Closed-Lost'];
 
   const fetchLeads = async (page = 1, status = activeTab, search = searchQuery, limit = pageSize) => {
     try {
@@ -198,11 +198,59 @@ const Leads = () => {
     }
   };
 
+  const handleDeleteLead = async (leadId, customerName) => {
+    const result = await Swal.fire({
+      title: 'Delete Lead?',
+      text: `Are you sure you want to delete "${customerName}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete lead',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await apiClient.delete(`/sales/leads/${leadId}`);
+        toast.success('Lead deleted successfully');
+        fetchLeads(currentPage, activeTab, searchQuery, pageSize);
+        if (isViewModalOpen && selectedLead?._id === leadId) {
+          setIsViewModalOpen(false);
+        }
+      } catch (error) {
+        console.error('Error deleting lead:', error);
+        toast.error(error.response?.data?.message || 'Failed to delete lead');
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.contactNumber && formData.contactNumber.length !== 10) {
       toast.warning("Phone number must be exactly 10 digits.");
       return;
+    }
+
+    if (!formData.email || !formData.email.trim()) {
+      toast.warning("Email is required.");
+      return;
+    }
+
+    if (modalMode === 'add') {
+      if (documentTypes && documentTypes.length > 0) {
+        const missingDocs = documentTypes.filter(docType => !leadDocuments[docType._id]);
+        if (missingDocs.length > 0) {
+          toast.warning(`Please upload all mandatory documents (${missingDocs.map(d => d.name).join(', ')})`);
+          return;
+        }
+      } else {
+        const uploadedCount = Object.values(leadDocuments).filter(Boolean).length;
+        if (uploadedCount === 0) {
+          toast.warning("Please upload at least one document.");
+          return;
+        }
+      }
     }
     try {
       if (modalMode === 'add') {
@@ -227,7 +275,11 @@ const Leads = () => {
       } else {
         const editPayload = { ...formData };
         await apiClient.put(`/sales/leads/${selectedLead._id}`, editPayload);
-        toast.success('Lead updated successfully!');
+        if (editPayload.status === 'Closed-Won') {
+          toast.success('Lead marked as Closed-Won and moved to Projects (Operations)!');
+        } else {
+          toast.success('Lead updated successfully!');
+        }
       }
       setIsModalOpen(false);
       fetchLeads(currentPage, activeTab, searchQuery);
@@ -249,10 +301,15 @@ const Leads = () => {
               payload.nextFollowUpDate = nextFollowUpDate;
           }
           await apiClient.put(`/sales/leads/${selectedLead._id}`, payload);
-          toast.success("Remark added!");
-          setRemarkText('');
-          setNextFollowUpDate('');
-          openViewModal(selectedLead); // refresh modal data
+          if (payload.status === 'Closed-Won') {
+            setIsViewModalOpen(false);
+            toast.success("Lead marked as Closed-Won and moved to Projects (Operations)!");
+          } else {
+            toast.success("Remark added!");
+            setRemarkText('');
+            setNextFollowUpDate('');
+            openViewModal(selectedLead); // refresh modal data
+          }
           fetchLeads();
       } catch (error) {
           toast.error("Failed to add remark");
@@ -302,8 +359,8 @@ const Leads = () => {
 
 // Removed bulk import functions
 
-  // Filter logic is now on backend, so we just use leads directly
-  const filteredLeads = leads;
+  // Filter out Closed-Won or converted deals (they belong to Projects Operations)
+  const filteredLeads = leads.filter(l => l.status !== 'Closed-Won' && !l.isConverted);
 
   return (
     <div className="space-y-6">
@@ -453,6 +510,9 @@ const Leads = () => {
                           <button onClick={() => openEditModal(lead)} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Edit Lead">
                             <Edit3 className="w-4 h-4" />
                           </button>
+                          <button onClick={() => handleDeleteLead(lead._id, lead.customerName)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Lead">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -542,8 +602,8 @@ const Leads = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm" placeholder="john@example.com" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm" placeholder="john@example.com" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
@@ -623,7 +683,12 @@ const Leads = () => {
 
               {modalMode === 'add' && documentTypes.length > 0 && (
                 <div className="border-t border-gray-100 pt-4 mt-2">
-                  <h3 className="text-sm font-bold text-gray-800 mb-3">Upload Documents</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-gray-800">Upload Documents *</h3>
+                    <span className="text-[11px] text-rose-500 font-semibold bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">
+                      All documents are mandatory *
+                    </span>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {documentTypes.map(docType => {
                       const selectedFile = leadDocuments[docType._id];
@@ -631,17 +696,17 @@ const Leads = () => {
                         <div key={docType._id} className="flex flex-row items-center gap-3">
                           <div className="flex-1">
                             <label className="block text-xs font-semibold text-gray-700 mb-1 capitalize">
-                              {docType.name}
-                              {docType.isRequired && <span className="text-rose-500 ml-0.5">*</span>}
+                              {docType.name} <span className="text-rose-500">*</span>
                             </label>
                             <input 
                               type="file" 
+                              required
                               onChange={(e) => setLeadDocuments(prev => ({ ...prev, [docType._id]: e.target.files[0] }))}
                               className="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 bg-white border border-gray-200 rounded-lg p-1.5 transition-colors"
                               accept=".pdf,.jpg,.jpeg,.png"
-                              required={docType.isRequired || false}
                             />
                           </div>
+
                           {selectedFile && (
                             <a 
                               href={URL.createObjectURL(selectedFile)} 
@@ -698,9 +763,19 @@ const Leads = () => {
                             <p className="text-sm text-gray-500">{selectedLead.companyName || 'No Company'}</p>
                         </div>
                       </div>
-                      <button onClick={() => setIsViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg">
-                        <X className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleDeleteLead(selectedLead._id, selectedLead.customerName)} 
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border border-red-200"
+                          title="Delete Lead"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete Lead
+                        </button>
+                        <button onClick={() => setIsViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg">
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
                   </div>
                   
                   <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30">
