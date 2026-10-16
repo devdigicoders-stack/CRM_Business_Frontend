@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye, Trash2, Search, Users, UserPlus, CheckSquare, Square } from 'lucide-react';
+import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye, Trash2, Search, Users, UserPlus, CheckSquare, Square, ClipboardList, Check } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
 import { Link } from 'react-router-dom';
@@ -101,8 +101,28 @@ const Projects = () => {
         leadId: '',
         customerName: '',
         quotationId: '',
-        remarks: ''
+        remarks: '',
+        selectedTemplateIds: []
     });
+
+    const [taskTemplates, setTaskTemplates] = useState([]);
+    const [departments, setDepartments] = useState([]);
+
+    // Select Template Tasks Modal
+    const [isSelectTasksModalOpen, setIsSelectTasksModalOpen] = useState(false);
+    const [projectSelectedTemplateIds, setProjectSelectedTemplateIds] = useState([]);
+    const [isSavingSelectedTasks, setIsSavingSelectedTasks] = useState(false);
+
+    // Add Custom Task Modal
+    const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+    const [customTaskData, setCustomTaskData] = useState({
+        taskName: '',
+        department: '',
+        tatHours: 24,
+        description: '',
+        requiredDocuments: ''
+    });
+    const [isSavingCustomTask, setIsSavingCustomTask] = useState(false);
 
     const [equipmentModal, setEquipmentModal] = useState({ isOpen: false, project: null });
     const [equipments, setEquipments] = useState([{ itemName: '', serialNumber: '', quantity: 1 }]);
@@ -154,11 +174,25 @@ const Projects = () => {
         } catch(e) { console.error("Error fetching users", e); }
     };
 
+    const fetchMasterData = async () => {
+        try {
+            const [tplRes, deptRes] = await Promise.all([
+                apiClient.get('/master/task-templates'),
+                apiClient.get('/master/departments')
+            ]);
+            setTaskTemplates(tplRes.data || []);
+            setDepartments(deptRes.data || []);
+        } catch (err) {
+            console.error("Error fetching task templates or departments:", err);
+        }
+    };
+
     useEffect(() => {
         checkUser();
         fetchProjects();
         fetchClosedWonLeads();
         fetchUsers();
+        fetchMasterData();
     }, []);
 
     const isSuperAdmin = userProfile?.role?.name === 'Admin' || userProfile?.role?.name === 'Super Admin';
@@ -171,19 +205,41 @@ const Projects = () => {
     const handleDeleteProject = async (projectId, customerName) => {
         const result = await Swal.fire({
             title: 'Delete Project?',
-            text: `Are you sure you want to delete the project for "${customerName}"? All related tasks and project records will be permanently removed.`,
+            html: `
+                <div class="text-left text-sm space-y-2">
+                    <p class="text-gray-600">Choose how you want to delete the project for <b>"${customerName}"</b>:</p>
+                    <div class="bg-red-50 p-2.5 rounded-lg border border-red-100 text-xs text-red-800">
+                        <b>Delete All Data:</b> Permanently removes Project, Tasks, linked Lead, Quotations, and Customer login account.
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-xs text-gray-700">
+                        <b>Project Only:</b> Removes only this project and its tasks, keeps the Lead and Customer account intact.
+                    </div>
+                </div>
+            `,
             icon: 'warning',
             showCancelButton: true,
+            showDenyButton: true,
             confirmButtonColor: '#dc2626',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Yes, delete project',
+            denyButtonColor: '#4b5563',
+            cancelButtonColor: '#9ca3af',
+            confirmButtonText: 'Delete All (Project + Lead + Customer)',
+            denyButtonText: 'Delete Project Only',
             cancelButtonText: 'Cancel'
         });
 
         if (result.isConfirmed) {
             try {
+                await apiClient.delete(`/operations/projects/${projectId}?cascade=true`);
+                toast.success('Project, Lead, Quotations & Customer deleted successfully');
+                fetchProjects();
+            } catch (error) {
+                console.error('Error deleting project & data:', error);
+                toast.error(error.response?.data?.message || 'Failed to delete project');
+            }
+        } else if (result.isDenied) {
+            try {
                 await apiClient.delete(`/operations/projects/${projectId}`);
-                toast.success('Project deleted successfully');
+                toast.success('Project deleted successfully (Lead retained)');
                 fetchProjects();
             } catch (error) {
                 console.error('Error deleting project:', error);
@@ -370,8 +426,136 @@ const Projects = () => {
     };
 
     const handleOpenCreateModal = () => {
-        setFormData({ leadId: '', customerName: '', quotationId: '', remarks: '' });
+        setFormData({ 
+            leadId: '', 
+            customerName: '', 
+            quotationId: '', 
+            remarks: '',
+            selectedTemplateIds: taskTemplates.map(t => t._id)
+        });
         setIsCreateModalOpen(true);
+    };
+
+    // Open Select Tasks Modal for Project
+    const handleOpenSelectTasksModal = (project) => {
+        const projectTasks = allTasks.filter(t => t.project?._id === project._id);
+        const initialSelectedIds = taskTemplates
+            .filter(tpl => projectTasks.some(pt => pt.taskName === tpl.taskName))
+            .map(tpl => tpl._id);
+        
+        setProjectSelectedTemplateIds(initialSelectedIds.length > 0 ? initialSelectedIds : taskTemplates.map(t => t._id));
+        setIsSelectTasksModalOpen(true);
+    };
+
+    // Save Selected Template Tasks for Project
+    const handleSaveSelectedTasks = async () => {
+        if (!viewProjectModal.project) return;
+        if (projectSelectedTemplateIds.length === 0) {
+            return toast.warning("Please select at least one task template.");
+        }
+        try {
+            setIsSavingSelectedTasks(true);
+            const res = await apiClient.post(`/operations/projects/${viewProjectModal.project._id}/select-tasks`, {
+                selectedTemplateIds: projectSelectedTemplateIds
+            });
+            toast.success(res.data.message || "Project tasks updated successfully!");
+            setIsSelectTasksModalOpen(false);
+
+            // Re-fetch project tasks
+            const taskRes = await apiClient.get('/operations/tasks', { params: { projectId: viewProjectModal.project._id } });
+            setAllTasks(prev => {
+                const otherTasks = prev.filter(t => t.project?._id !== viewProjectModal.project._id);
+                return [...otherTasks, ...taskRes.data];
+            });
+            fetchProjects();
+        } catch (err) {
+            console.error("Failed to update project tasks:", err);
+            toast.error(err.response?.data?.message || "Failed to update project tasks");
+        } finally {
+            setIsSavingSelectedTasks(false);
+        }
+    };
+
+    // Add Custom Task to Project
+    const handleAddCustomTask = async (e) => {
+        e.preventDefault();
+        if (!viewProjectModal.project) return;
+        if (!customTaskData.taskName.trim()) {
+            return toast.warning("Task name is required.");
+        }
+        if (!customTaskData.department) {
+            return toast.warning("Please select a department.");
+        }
+
+        try {
+            setIsSavingCustomTask(true);
+            const reqDocs = customTaskData.requiredDocuments
+                ? customTaskData.requiredDocuments.split(',').map(s => s.trim()).filter(Boolean)
+                : [];
+
+            const res = await apiClient.post(`/operations/projects/${viewProjectModal.project._id}/tasks`, {
+                taskName: customTaskData.taskName.trim(),
+                department: customTaskData.department,
+                tatHours: Number(customTaskData.tatHours) || 24,
+                description: customTaskData.description,
+                requiredDocuments: reqDocs
+            });
+
+            toast.success(res.data.message || "Custom task added successfully!");
+            setIsAddTaskModalOpen(false);
+            setCustomTaskData({
+                taskName: '',
+                department: departments[0]?._id || '',
+                tatHours: 24,
+                description: '',
+                requiredDocuments: ''
+            });
+
+            // Re-fetch project tasks
+            const taskRes = await apiClient.get('/operations/tasks', { params: { projectId: viewProjectModal.project._id } });
+            setAllTasks(prev => {
+                const otherTasks = prev.filter(t => t.project?._id !== viewProjectModal.project._id);
+                return [...otherTasks, ...taskRes.data];
+            });
+            fetchProjects();
+        } catch (err) {
+            console.error("Failed to add custom task:", err);
+            toast.error(err.response?.data?.message || "Failed to add custom task");
+        } finally {
+            setIsSavingCustomTask(false);
+        }
+    };
+
+    // Delete Task from Project
+    const handleDeleteTask = async (taskId, taskName) => {
+        const result = await Swal.fire({
+            title: 'Remove Task?',
+            text: `Are you sure you want to remove "${taskName}" from this project?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, remove task',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await apiClient.delete(`/operations/tasks/${taskId}`);
+                toast.success('Task removed from project');
+                
+                // Re-fetch project tasks
+                const taskRes = await apiClient.get('/operations/tasks', { params: { projectId: viewProjectModal.project._id } });
+                setAllTasks(prev => {
+                    const otherTasks = prev.filter(t => t.project?._id !== viewProjectModal.project._id);
+                    return [...otherTasks, ...taskRes.data];
+                });
+                fetchProjects();
+            } catch (err) {
+                console.error("Failed to remove task:", err);
+                toast.error(err.response?.data?.message || "Failed to remove task");
+            }
+        }
     };
 
     const handleLeadChange = (e) => {
@@ -645,8 +829,8 @@ const Projects = () => {
                                                     </Link>
                                                 )}
 
-                                                {/* Super Admin Delete Project */}
-                                                {isSuperAdmin && (
+                                                {/* Super Admin Delete Project (Only for incomplete projects) */}
+                                                {isSuperAdmin && project.status !== 'Completed' && project.workflowStage !== 'Completed' && (
                                                     <button
                                                         onClick={() => handleDeleteProject(project._id, project.customerName)}
                                                         className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white text-[10px] font-bold rounded transition-colors inline-flex items-center gap-1"
@@ -721,9 +905,60 @@ const Projects = () => {
                                         onChange={(e) => setFormData({...formData, remarks: e.target.value})}
                                         className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0B3A2C]/20 focus:border-[#0B3A2C] transition-all"
                                         placeholder="Add any initial notes for the operations team..."
-                                        rows="3"
+                                        rows="2"
                                     ></textarea>
                                 </div>
+
+                                {/* Task Template Selection for this Project */}
+                                {taskTemplates.length > 0 && (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                                Select Tasks to Include ({formData.selectedTemplateIds?.length || 0}/{taskTemplates.length})
+                                            </label>
+                                            <div className="flex gap-2 text-xs">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, selectedTemplateIds: taskTemplates.map(t => t._id) })}
+                                                    className="text-[#0B3A2C] font-semibold hover:underline"
+                                                >
+                                                    Select All
+                                                </button>
+                                                <span className="text-gray-300">|</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, selectedTemplateIds: [] })}
+                                                    className="text-gray-500 font-semibold hover:underline"
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="max-h-36 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50 space-y-1">
+                                            {taskTemplates.map((t) => {
+                                                const isChecked = formData.selectedTemplateIds?.includes(t._id);
+                                                return (
+                                                    <label key={t._id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded-lg cursor-pointer text-xs text-gray-700">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setFormData({ ...formData, selectedTemplateIds: [...(formData.selectedTemplateIds || []), t._id] });
+                                                                } else {
+                                                                    setFormData({ ...formData, selectedTemplateIds: (formData.selectedTemplateIds || []).filter(id => id !== t._id) });
+                                                                }
+                                                            }}
+                                                            className="rounded text-[#0B3A2C] focus:ring-[#0B3A2C]"
+                                                        />
+                                                        <span className="font-medium text-gray-800">{t.taskName}</span>
+                                                        <span className="text-[10px] text-gray-400">({t.tatHours}h)</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100">
                                     <button 
@@ -761,16 +996,43 @@ const Projects = () => {
                                     <h3 className="text-lg font-bold text-[#0B3A2C]">Project Tasks: <span className="text-gray-900">{viewProjectModal.project.customerName}</span></h3>
                                     <p className="text-xs text-gray-500 mt-1">Workflow Stage: <span className="font-semibold text-gray-700">{viewProjectModal.project.workflowStage}</span> | Overall Status: <span className="font-semibold text-gray-700">{viewProjectModal.project.status}</span></p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     {hasPermission('create_task') && (
-                                        <button
-                                            onClick={() => handleOpenMultiAssignModal(viewProjectModal.project)}
-                                            className="px-3.5 py-1.5 bg-[#0B3A2C] text-white rounded-lg text-xs font-bold hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm"
-                                            title="Assign multiple tasks together (optional to assign all)"
-                                        >
-                                            <Users className="w-3.5 h-3.5 text-emerald-300" />
-                                            Multi-Assign Tasks
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={() => handleOpenSelectTasksModal(viewProjectModal.project)}
+                                                className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5 shadow-sm"
+                                                title="Select which template tasks to include in this project"
+                                            >
+                                                <ClipboardList className="w-3.5 h-3.5 text-blue-600" />
+                                                Select Template Tasks
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setCustomTaskData({
+                                                        taskName: '',
+                                                        department: departments[0]?._id || '',
+                                                        tatHours: 24,
+                                                        description: '',
+                                                        requiredDocuments: ''
+                                                    });
+                                                    setIsAddTaskModalOpen(true);
+                                                }}
+                                                className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all flex items-center gap-1.5 shadow-sm"
+                                                title="Add custom task to this project"
+                                            >
+                                                <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                                                + Add Custom Task
+                                            </button>
+                                            <button
+                                                onClick={() => handleOpenMultiAssignModal(viewProjectModal.project)}
+                                                className="px-3 py-1.5 bg-[#0B3A2C] text-white rounded-lg text-xs font-bold hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm"
+                                                title="Assign multiple tasks together (optional to assign all)"
+                                            >
+                                                <Users className="w-3.5 h-3.5 text-emerald-300" />
+                                                Multi-Assign Tasks
+                                            </button>
+                                        </>
                                     )}
                                     <button 
                                         onClick={() => {
@@ -923,24 +1185,34 @@ const Projects = () => {
                                                         </button>
                                                     )}
                                                     
-                                                    {/* Assign / Reassign Task Button (Not restricted to current step) */}
+                                                    {/* Assign / Reassign Task Button & Delete Task */}
                                                     {hasPermission('create_task') && task.status !== 'Completed' && task.status !== 'Approved' && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setAssigneeId(task.assignedTo?._id || '');
-                                                                setAssignModal({ isOpen: true, taskId: task._id, projectId: viewProjectModal.project._id });
-                                                                // Fetch project documents
-                                                                apiClient.get(`/operations/projects/${viewProjectModal.project._id}/documents`)
-                                                                    .then(res => setProjectDocuments(res.data))
-                                                                    .catch(err => console.error("Failed to fetch project docs", err));
-                                                            }}
-                                                            className={`px-3 py-1 text-white text-[10px] uppercase font-bold rounded transition-colors ${
-                                                                task.assignedTo ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-500 hover:bg-amber-600'
-                                                            }`}
-                                                            title={task.assignedTo ? "Change Assignee" : "Assign Task"}
-                                                        >
-                                                            {task.assignedTo ? 'Reassign' : 'Assign Task'}
-                                                        </button>
+                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setAssigneeId(task.assignedTo?._id || '');
+                                                                    setAssignModal({ isOpen: true, taskId: task._id, projectId: viewProjectModal.project._id });
+                                                                    // Fetch project documents
+                                                                    apiClient.get(`/operations/projects/${viewProjectModal.project._id}/documents`)
+                                                                        .then(res => setProjectDocuments(res.data))
+                                                                        .catch(err => console.error("Failed to fetch project docs", err));
+                                                                }}
+                                                                className={`px-3 py-1 text-white text-[10px] uppercase font-bold rounded transition-colors ${
+                                                                    task.assignedTo ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-500 hover:bg-amber-600'
+                                                                }`}
+                                                                title={task.assignedTo ? "Change Assignee" : "Assign Task"}
+                                                            >
+                                                                {task.assignedTo ? 'Reassign' : 'Assign Task'}
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => handleDeleteTask(task._id, task.taskName)}
+                                                                className="p-1 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded transition-colors"
+                                                                title="Remove task from this project"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>
@@ -957,6 +1229,226 @@ const Projects = () => {
                     </div>
                 );
             })()}
+
+            {/* Select Template Tasks Modal for Project */}
+            {isSelectTasksModalOpen && viewProjectModal.project && (
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-[#0B3A2C]">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                    <ClipboardList className="w-5 h-5 text-[#0B3A2C]" />
+                                    Select Tasks for Project
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">{viewProjectModal.project.customerName}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsSelectTasksModalOpen(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-xs text-gray-600 mb-3">
+                                Choose which template tasks are required for this project. Tasks not selected will be removed, and selected tasks will be generated.
+                            </p>
+
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    Available Template Tasks ({projectSelectedTemplateIds.length}/{taskTemplates.length})
+                                </span>
+                                <div className="flex gap-2 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setProjectSelectedTemplateIds(taskTemplates.map(t => t._id))}
+                                        className="text-[#0B3A2C] font-semibold hover:underline"
+                                    >
+                                        Select All
+                                    </button>
+                                    <span className="text-gray-300">|</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setProjectSelectedTemplateIds([])}
+                                        className="text-gray-500 font-semibold hover:underline"
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50 space-y-1 mb-4">
+                                {taskTemplates.map((tpl, index) => {
+                                    const isChecked = projectSelectedTemplateIds.includes(tpl._id);
+                                    return (
+                                        <label 
+                                            key={tpl._id} 
+                                            className={`flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs transition-colors ${
+                                                isChecked ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-950 font-medium' : 'hover:bg-white text-gray-700 border border-transparent'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setProjectSelectedTemplateIds(prev => [...prev, tpl._id]);
+                                                        } else {
+                                                            setProjectSelectedTemplateIds(prev => prev.filter(id => id !== tpl._id));
+                                                        }
+                                                    }}
+                                                    className="rounded text-[#0B3A2C] focus:ring-[#0B3A2C]"
+                                                />
+                                                <span>
+                                                    <span className="text-gray-400 font-bold mr-1.5">{index + 1}.</span>
+                                                    {tpl.taskName}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 px-2 py-0.5 bg-gray-100 rounded">
+                                                {tpl.department?.name || 'Operations'} • {tpl.tatHours}h
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSelectTasksModalOpen(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveSelectedTasks}
+                                    disabled={isSavingSelectedTasks || projectSelectedTemplateIds.length === 0}
+                                    className="px-5 py-2 text-xs font-bold bg-[#0B3A2C] text-white rounded-lg hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                                >
+                                    {isSavingSelectedTasks ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    Apply Selected Tasks ({projectSelectedTemplateIds.length})
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Custom Task Modal */}
+            {isAddTaskModalOpen && viewProjectModal.project && (
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-emerald-600">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                    <Plus className="w-5 h-5 text-emerald-600" />
+                                    Add Custom Task to Project
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">{viewProjectModal.project.customerName}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsAddTaskModalOpen(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddCustomTask} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Task Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={customTaskData.taskName}
+                                    onChange={(e) => setCustomTaskData({ ...customTaskData, taskName: e.target.value })}
+                                    placeholder="e.g. Special Meter Installation / Extra Approvals"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                        Department *
+                                    </label>
+                                    <select
+                                        required
+                                        value={customTaskData.department}
+                                        onChange={(e) => setCustomTaskData({ ...customTaskData, department: e.target.value })}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                                    >
+                                        <option value="">-- Select Department --</option>
+                                        {departments.map(d => (
+                                            <option key={d._id} value={d._id}>{d.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                        TAT (Hours)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={customTaskData.tatHours}
+                                        onChange={(e) => setCustomTaskData({ ...customTaskData, tatHours: e.target.value })}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Required Documents (Comma separated, optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={customTaskData.requiredDocuments}
+                                    onChange={(e) => setCustomTaskData({ ...customTaskData, requiredDocuments: e.target.value })}
+                                    placeholder="e.g. Site Photo, Inspection Report, Customer Signoff"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Description / Instructions (Optional)
+                                </label>
+                                <textarea
+                                    rows="2"
+                                    value={customTaskData.description}
+                                    onChange={(e) => setCustomTaskData({ ...customTaskData, description: e.target.value })}
+                                    placeholder="Detailed instructions for the assigned staff..."
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddTaskModalOpen(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingCustomTask}
+                                    className="px-5 py-2 text-xs font-bold bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                                >
+                                    {isSavingCustomTask ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                    Add Task to Project
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Approve Task Modal */}
             {approveModal.isOpen && (

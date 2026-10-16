@@ -209,9 +209,40 @@ const Sales = () => {
     }));
   };
 
-  // For selecting a product — updates name, price, description at once
+  // For selecting a product or kit — if kit, expands into individual component line items
   const handleProductSelect = (index, productName) => {
     const selected = productsList.find(p => p.name === productName);
+    if (!selected) return;
+
+    if (selected.itemType === 'Kit' && selected.kitComponents && selected.kitComponents.length > 0) {
+      const totalKitPrice = Number(selected.price) || 0;
+      const count = selected.kitComponents.length;
+      const baseShare = Math.floor(totalKitPrice / count);
+      const remainder = totalKitPrice - (baseShare * count);
+
+      const expandedItems = selected.kitComponents.map((comp, compIdx) => {
+        const compPrice = compIdx === 0 ? baseShare + remainder : baseShare;
+        return {
+          itemType: 'Product',
+          name: comp.name + (comp.specification ? ` (${comp.specification})` : ''),
+          description: `Part of ${selected.name} (${comp.quantity} ${comp.unit || 'Nos'})`,
+          quantity: comp.quantity || 1,
+          price: compPrice,
+          gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : 12
+        };
+      });
+
+      // Replace current row with all kit items
+      setItems(prev => {
+        const nextItems = [...prev];
+        nextItems.splice(index, 1, ...expandedItems);
+        return nextItems;
+      });
+
+      toast.success(`Solar Kit "${selected.name}" added as ${expandedItems.length} individual items!`);
+      return;
+    }
+
     setItems(prev => prev.map((item, idx) => {
       if (idx === index) {
         return {
@@ -220,11 +251,60 @@ const Sales = () => {
           price: selected ? selected.price : item.price,
           description: selected?.description || item.description,
           gstPercentage: selected?.gstPercentage !== undefined ? selected.gstPercentage : item.gstPercentage,
-          itemType: selected?.itemType || item.itemType
+          itemType: selected?.itemType === 'Kit' ? 'Product' : (selected?.itemType || item.itemType)
         };
       }
       return item;
     }));
+  };
+
+  const handleInsertKit = (kitName) => {
+    const selected = productsList.find(p => p.name === kitName);
+    if (!selected) return;
+
+    if (selected.kitComponents && selected.kitComponents.length > 0) {
+      const totalKitPrice = Number(selected.price) || 0;
+      const count = selected.kitComponents.length;
+      const baseShare = Math.floor(totalKitPrice / count);
+      const remainder = totalKitPrice - (baseShare * count);
+
+      const expandedItems = selected.kitComponents.map((comp, compIdx) => {
+        const compPrice = compIdx === 0 ? baseShare + remainder : baseShare;
+        return {
+          itemType: 'Product',
+          name: comp.name + (comp.specification ? ` (${comp.specification})` : ''),
+          description: `Part of ${selected.name} (${comp.quantity} ${comp.unit || 'Nos'})`,
+          quantity: comp.quantity || 1,
+          price: compPrice,
+          gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : 12
+        };
+      });
+
+      setItems(prev => {
+        if (prev.length === 1 && !prev[0].name && !prev[0].price) {
+          return expandedItems;
+        }
+        return [...prev, ...expandedItems];
+      });
+
+      toast.success(`Solar Kit "${selected.name}" added with ${expandedItems.length} components!`);
+    } else {
+      const newItem = {
+        itemType: 'Product',
+        name: selected.name,
+        description: selected.description || '',
+        quantity: 1,
+        price: selected.price,
+        gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : 12
+      };
+      setItems(prev => {
+        if (prev.length === 1 && !prev[0].name && !prev[0].price) {
+          return [newItem];
+        }
+        return [...prev, newItem];
+      });
+      toast.success(`Added "${selected.name}" to quotation!`);
+    }
   };
 
   const handleOpenCreateModal = () => {
@@ -962,17 +1042,39 @@ const Sales = () => {
 
               {/* Items Section */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Quotation Line Items (Products & Services)
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3A2C] hover:text-emerald-700 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add Another Item
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Quick Insert Solar Kit dropdown */}
+                    {productsList.some(p => p.itemType === 'Kit') && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleInsertKit(e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        defaultValue=""
+                        className="px-2.5 py-1 text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 rounded-lg focus:outline-none cursor-pointer hover:bg-amber-100 transition-colors"
+                      >
+                        <option value="" disabled>+ Insert Solar Kit Package</option>
+                        {productsList.filter(p => p.itemType === 'Kit').map(k => (
+                          <option key={k._id} value={k.name}>
+                            {k.name} ({k.capacity || 'Kit'}) — ₹{Number(k.price).toLocaleString('en-IN')}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleAddItem}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3A2C] hover:text-emerald-700 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Another Item
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -993,6 +1095,7 @@ const Sales = () => {
                             className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           >
                             <option value="Product">Product</option>
+                            <option value="Kit">Solar Kit</option>
                             <option value="Service">Service</option>
                           </select>
                         </div>
@@ -1000,7 +1103,7 @@ const Sales = () => {
                         {/* Item Name / Product Select */}
                         <div className="col-span-12 sm:col-span-5">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
-                            Select {item.itemType} *
+                            Select {item.itemType === 'Kit' ? 'Solar Kit' : item.itemType} *
                           </label>
                           <select
                             value={item.name}
@@ -1008,11 +1111,17 @@ const Sales = () => {
                             required
                             className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           >
-                            <option value="">-- Select {item.itemType} --</option>
+                            <option value="">-- Select {item.itemType === 'Kit' ? 'Solar Kit' : item.itemType} --</option>
                             {productsList
-                              .filter(prod => prod.itemType === item.itemType)
+                              .filter(prod => {
+                                if (item.itemType === 'Kit') return prod.itemType === 'Kit';
+                                if (item.itemType === 'Product') return prod.itemType === 'Product' || !prod.itemType;
+                                return prod.itemType === item.itemType;
+                              })
                               .map(prod => (
-                                <option key={prod._id} value={prod.name}>{prod.name}</option>
+                                <option key={prod._id} value={prod.name}>
+                                  {prod.name} {prod.capacity ? `(${prod.capacity})` : ''} — ₹{Number(prod.price).toLocaleString('en-IN')}
+                                </option>
                             ))}
                           </select>
                         </div>

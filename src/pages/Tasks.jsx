@@ -58,6 +58,7 @@ const CountdownTimer = ({ dueDate, status, submittedAt, opsHeadReminderHours }) 
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
+  const [activeTab, setActiveTab] = useState('Open'); // 'Open' by default, or 'Completed'
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,10 +113,15 @@ const Tasks = () => {
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (tab = activeTab) => {
     setIsLoading(true);
     try {
-      const res = await apiClient.get('/operations/tasks');
+      const params = {};
+      if (tab === 'Open') params.status = 'open';
+      else if (tab === 'Completed') params.status = 'Completed';
+      else if (tab === 'All') params.status = 'All';
+
+      const res = await apiClient.get('/operations/tasks', { params });
       setTasks(res.data);
     } catch (error) {
       toast.error('Failed to load tasks');
@@ -233,6 +239,13 @@ const Tasks = () => {
   };
 
   const filteredTasks = tasks.filter(task => {
+    // When on Open tab, strictly hide Completed and Approved tasks
+    if (activeTab === 'Open' && (task.status === 'Completed' || task.status === 'Approved')) {
+      return false;
+    }
+    if (activeTab === 'Completed' && task.status !== 'Completed' && task.status !== 'Approved') {
+      return false;
+    }
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
@@ -254,6 +267,44 @@ const Tasks = () => {
           </h1>
           <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Manage project workflows and approvals</p>
         </div>
+      </div>
+
+      {/* Task Status Tabs (Open Tasks by Default) */}
+      <div className="flex border-b border-gray-200 gap-4 sm:gap-6 bg-white px-4 pt-3 rounded-xl shadow-sm border border-gray-100">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('Open');
+            fetchTasks('Open');
+          }}
+          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            activeTab === 'Open'
+              ? 'border-[#0B3A2C] text-[#0B3A2C]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <span>Open Tasks</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === 'Open' ? 'bg-[#0B3A2C]/10 text-[#0B3A2C]' : 'bg-gray-100 text-gray-600'
+          }`}>
+            {activeTab === 'Open' ? filteredTasks.length : tasks.filter(t => t.status !== 'Completed' && t.status !== 'Approved').length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('Completed');
+            fetchTasks('Completed');
+          }}
+          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            activeTab === 'Completed'
+              ? 'border-[#0B3A2C] text-[#0B3A2C]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <span>Completed</span>
+        </button>
       </div>
 
       {/* Search Filter */}
@@ -352,14 +403,20 @@ const Tasks = () => {
                 <tr>
                   <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">Loading tasks...</td>
                 </tr>
-              ) : tasks.length === 0 ? (
+              ) : tasks.length === 0 || filteredTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">No tasks found.</td>
-                </tr>
-              ) : filteredTasks.length === 0 ? (
-                <tr>
-                  <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
-                    No tasks match your search "{searchTerm}".
+                  <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                        <Check className="w-6 h-6" />
+                      </div>
+                      <p className="font-semibold text-gray-800 text-sm">
+                        {searchTerm ? `No tasks match "${searchTerm}"` : (activeTab === 'Open' ? "No Open Tasks" : "No Completed Tasks")}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {activeTab === 'Open' ? "All assigned tasks have been completed. Great job!" : ""}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (

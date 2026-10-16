@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users, UserPlus, Briefcase, IndianRupee,
   CheckCircle2, Clock, AlertTriangle, TrendingUp,
@@ -67,6 +68,7 @@ const Badge = ({ status }) => {
 
 // ─── Main Dashboard ───────────────────────────────────────────
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -128,27 +130,27 @@ const Dashboard = () => {
         <>
           <Section title="Leads Overview">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={Users} label="Total Leads" value={data.leads?.total} color="blue" />
-              <StatCard icon={Clock} label="Pending / New" value={data.leads?.pending} color="amber" />
-              <StatCard icon={Activity} label="In Progress" value={data.leads?.inProgress} color="indigo" />
-              <StatCard icon={CheckCircle2} label="Closed Won" value={data.leads?.closedWon} color="emerald" />
+              <StatCard icon={Users} label="Total Leads" value={data.leads?.total} color="blue" onClick={() => navigate('/dashboard/leads')} />
+              <StatCard icon={Clock} label="Pending / New" value={data.leads?.pending} color="amber" onClick={() => navigate('/dashboard/leads')} />
+              <StatCard icon={Activity} label="In Progress" value={data.leads?.inProgress} color="indigo" onClick={() => navigate('/dashboard/leads')} />
+              <StatCard icon={CheckCircle2} label="Closed Won" value={data.leads?.closedWon} color="emerald" onClick={() => navigate('/dashboard/closed-won')} />
             </div>
           </Section>
 
           <Section title="Quotations">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <StatCard icon={FileText} label="Total Quotations" value={data.quotations?.total} color="purple" />
-              <StatCard icon={Clock} label="Pending Approval" value={data.quotations?.pending} color="amber" />
-              <StatCard icon={CheckCircle2} label="Approved" value={data.quotations?.approved} color="emerald" />
+              <StatCard icon={FileText} label="Total Quotations" value={data.quotations?.total} color="purple" onClick={() => navigate('/dashboard/sales')} />
+              <StatCard icon={Clock} label="Pending Approval" value={data.quotations?.pending} color="amber" onClick={() => navigate('/dashboard/sales')} />
+              <StatCard icon={CheckCircle2} label="Approved" value={data.quotations?.approved} color="emerald" onClick={() => navigate('/dashboard/sales')} />
             </div>
           </Section>
 
           <Section title="Projects">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={Briefcase} label="Total Projects" value={data.projects?.total} color="blue" />
-              <StatCard icon={Activity} label="Active" value={data.projects?.active} color="indigo" />
-              <StatCard icon={CheckCircle2} label="Completed" value={data.projects?.completed} color="green" />
-              <StatCard icon={Clock} label="Pending" value={data.projects?.pending} color="amber" />
+              <StatCard icon={Briefcase} label="Total Projects" value={data.projects?.total} color="blue" onClick={() => navigate('/dashboard/projects')} />
+              <StatCard icon={Activity} label="Active" value={data.projects?.active} color="indigo" onClick={() => navigate('/dashboard/projects')} />
+              <StatCard icon={CheckCircle2} label="Completed" value={data.projects?.completed} color="green" onClick={() => navigate('/dashboard/projects')} />
+              <StatCard icon={Clock} label="Pending" value={data.projects?.pending} color="amber" onClick={() => navigate('/dashboard/projects')} />
             </div>
           </Section>
 

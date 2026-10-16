@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, Search, Key, Eye, Shield, Phone, Mail, MapPin, Building, Calendar, CheckCircle2, XCircle, RefreshCw, Lock
+  Users, Search, Key, Eye, Shield, Phone, Mail, MapPin, Building, Calendar, CheckCircle2, XCircle, RefreshCw, Lock, Trash2
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import apiClient from '../api/axiosConfig';
 import { getCustomers, changeUserPassword } from '../api/authApi';
 
@@ -112,6 +113,35 @@ const Customers = () => {
   };
 
   // Filter customers based on search term
+  const handleDeleteCustomer = async (customer) => {
+    if (!isSuperAdmin) {
+      toast.error('Only Super Admin can delete customers.');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Delete Customer?',
+      text: `Are you sure you want to delete customer "${customer.name}" (${customer.email})? This user account will be permanently deleted.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete customer',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await apiClient.delete(`/auth/customers/${customer._id}`);
+        toast.success('Customer deleted successfully');
+        fetchCustomers();
+      } catch (err) {
+        console.error('Error deleting customer:', err);
+        toast.error(err.response?.data?.message || 'Failed to delete customer');
+      }
+    }
+  };
+
   const filteredCustomers = customers.filter(c => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
@@ -358,13 +388,22 @@ const Customers = () => {
 
                         {/* Change Password (Super Admin Only) */}
                         {isSuperAdmin && (
-                          <button 
-                            onClick={() => openPasswordModal(customer)}
-                            className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                            title="Change Password (Super Admin Only)"
-                          >
-                            <Key className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => openPasswordModal(customer)}
+                              className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                              title="Change Password (Super Admin Only)"
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteCustomer(customer)}
+                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete Customer (Super Admin Only)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

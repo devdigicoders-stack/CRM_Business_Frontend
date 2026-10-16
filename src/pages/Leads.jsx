@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
   Download, Plus, Search, Filter, 
-  MoreVertical, Edit3, ChevronDown, X, Eye, Upload, UserCheck, CheckSquare, Users, FileText, ExternalLink, Trash2
+  MoreVertical, Edit3, ChevronDown, X, Eye, Upload, UserCheck, CheckSquare, Users, FileText, ExternalLink, Trash2, Trophy
 } from 'lucide-react';
 import apiClient from '../api/axiosConfig';
 import Swal from 'sweetalert2';
@@ -76,14 +77,16 @@ const Leads = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
   
-  const tabs = ['All', 'Pending', 'Contacted', 'Interested', 'Follow-up', 'Quotation Sent', 'Negotiation', 'Closed-Lost'];
+  const tabs = ['All', 'Pending', 'Contacted', 'Interested', 'Follow-up', 'Quotation Sent', 'Negotiation', 'Closed-Lost', 'Closed-Won'];
 
   const fetchLeads = async (page = 1, status = activeTab, search = searchQuery, limit = pageSize) => {
     try {
       setIsLoading(true);
-      const res = await apiClient.get('/sales/leads', {
-        params: { page, limit, status, search }
-      });
+      const params = { page, limit, status, search };
+      if (status === 'Closed-Won') {
+        params.includeClosedWon = 'true';
+      }
+      const res = await apiClient.get('/sales/leads', { params });
       setLeads(res.data.leads || []);
       setTotalPages(res.data.totalPages || 1);
       setTotalLeads(res.data.totalLeads || 0);
@@ -359,8 +362,8 @@ const Leads = () => {
 
 // Removed bulk import functions
 
-  // Filter out Closed-Won or converted deals (they belong to Projects Operations)
-  const filteredLeads = leads.filter(l => l.status !== 'Closed-Won' && !l.isConverted);
+  // Filter out Closed-Won or converted deals unless viewing Closed-Won tab
+  const filteredLeads = activeTab === 'Closed-Won' ? leads : leads.filter(l => l.status !== 'Closed-Won' && !l.isConverted);
 
   return (
     <div className="space-y-6">
@@ -371,6 +374,13 @@ const Leads = () => {
           <p className="text-[11px] sm:text-sm text-gray-500 mt-1">Manage and track all your sales leads</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <Link
+            to="/dashboard/closed-won"
+            className="border border-emerald-600/30 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100/80 px-3.5 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+          >
+            <Trophy className="w-4 h-4 text-emerald-600" />
+            <span>Closed-Won Deals</span>
+          </Link>
           {hasCreateLead && (
             <button onClick={openAddModal} className="bg-[#0B3A2C] text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-[#0a2f23] transition-colors flex items-center gap-2">
               <Plus className="w-4 h-4" />

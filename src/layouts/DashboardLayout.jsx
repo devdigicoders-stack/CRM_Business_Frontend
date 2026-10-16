@@ -11,6 +11,7 @@ const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, permission: null },
     // 'Leads' - shown to Admin, Sales Manager, Operation Head (anyone with view_leads or create_lead)
     { name: 'Leads', path: '/dashboard/leads', icon: UserCircle, permission: 'view_leads' },
+    { name: 'Closed-Won Deals', path: '/dashboard/closed-won', icon: Trophy, permission: 'view_leads' },
     { name: 'Quotation', path: '/dashboard/sales', icon: Briefcase, permission: 'view_quotations' },
     { name: 'Projects', path: '/dashboard/projects', icon: Briefcase, permission: 'view_projects' },
     { name: 'Hardware', path: '/dashboard/hardware', icon: Cpu, permission: 'manage_hardware' },
