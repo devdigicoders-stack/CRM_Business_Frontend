@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye, Trash2, Search } from 'lucide-react';
+import { Briefcase, Plus, Loader2, X, Building2, User, Phone, CheckCircle2, Eye, Trash2, Search, Users, UserPlus, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
 import { Link } from 'react-router-dom';
@@ -71,6 +71,17 @@ const Projects = () => {
     const [projectDocuments, setProjectDocuments] = useState([]);
     const [selectedReferenceDocs, setSelectedReferenceDocs] = useState([]);
     const [users, setUsers] = useState([]);
+    
+    // Multi-task assignment states
+    const [multiAssignModal, setMultiAssignModal] = useState({ isOpen: false, project: null });
+    const [multiAssignments, setMultiAssignments] = useState({}); // { taskId: userId }
+    const [isSavingMultiAssign, setIsSavingMultiAssign] = useState(false);
+    const [quickAssigneeAll, setQuickAssigneeAll] = useState('');
+
+    // Checkbox bulk assign state inside viewProjectModal
+    const [selectedProjectTaskIds, setSelectedProjectTaskIds] = useState([]);
+    const [bulkAssignModal, setBulkAssignModal] = useState(false);
+    const [bulkAssigneeId, setBulkAssigneeId] = useState('');
     
     const [approveStatus, setApproveStatus] = useState('Approved');
     const [approveRemark, setApproveRemark] = useState('');
@@ -219,6 +230,103 @@ const Projects = () => {
             fetchProjects();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to assign task');
+        }
+    };
+
+    const handleOpenMultiAssignModal = async (project) => {
+        try {
+            const docRes = await apiClient.get(`/operations/projects/${project._id}/documents`);
+            setProjectDocuments(docRes.data || []);
+        } catch (err) {
+            console.error("Failed to fetch project docs", err);
+        }
+
+        const projectTasks = allTasks.filter(t => t.project?._id === project._id);
+        const initialMap = {};
+        projectTasks.forEach(t => {
+            initialMap[t._id] = t.assignedTo?._id || t.assignedTo || '';
+        });
+        setMultiAssignments(initialMap);
+        setQuickAssigneeAll('');
+        setSelectedReferenceDocs([]);
+        setMultiAssignModal({ isOpen: true, project });
+    };
+
+    const handleApplyQuickAssignAll = () => {
+        if (!quickAssigneeAll) return;
+        const projectTasks = allTasks.filter(t => t.project?._id === multiAssignModal.project?._id && t.status !== 'Completed' && t.status !== 'Approved');
+        const updated = { ...multiAssignments };
+        projectTasks.forEach(t => {
+            updated[t._id] = quickAssigneeAll;
+        });
+        setMultiAssignments(updated);
+        toast.info("Applied employee to all active tasks");
+    };
+
+    const handleMultiAssignSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Collect only tasks where an employee has been selected
+        const assignments = Object.entries(multiAssignments)
+            .filter(([taskId, assignedTo]) => assignedTo && assignedTo.trim() !== '')
+            .map(([taskId, assignedTo]) => ({
+                taskId,
+                assignedTo,
+                referenceDocuments: selectedReferenceDocs
+            }));
+
+        if (assignments.length === 0) {
+            return toast.warning("Please assign at least one task to an employee.");
+        }
+
+        try {
+            setIsSavingMultiAssign(true);
+            const res = await apiClient.put('/operations/tasks/assign-multiple', {
+                assignments
+            });
+            toast.success(res.data.message || 'Tasks assigned successfully!');
+            setMultiAssignModal({ isOpen: false, project: null });
+            setSelectedReferenceDocs([]);
+
+            const taskRes = await apiClient.get('/operations/tasks');
+            setAllTasks(taskRes.data || []);
+            fetchProjects();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to assign tasks');
+        } finally {
+            setIsSavingMultiAssign(false);
+        }
+    };
+
+    const handleBulkAssignSubmit = async (e) => {
+        e.preventDefault();
+        if (!bulkAssigneeId) {
+            return toast.warning("Please select an employee.");
+        }
+        if (selectedProjectTaskIds.length === 0) {
+            return toast.warning("No tasks selected.");
+        }
+
+        try {
+            setIsSavingMultiAssign(true);
+            const res = await apiClient.put('/operations/tasks/assign-multiple', {
+                taskIds: selectedProjectTaskIds,
+                assignedTo: bulkAssigneeId,
+                referenceDocuments: selectedReferenceDocs
+            });
+            toast.success(res.data.message || 'Selected tasks assigned successfully!');
+            setBulkAssignModal(false);
+            setSelectedProjectTaskIds([]);
+            setBulkAssigneeId('');
+            setSelectedReferenceDocs([]);
+
+            const taskRes = await apiClient.get('/operations/tasks');
+            setAllTasks(taskRes.data || []);
+            fetchProjects();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to assign selected tasks');
+        } finally {
+            setIsSavingMultiAssign(false);
         }
     };
 
@@ -585,115 +693,214 @@ const Projects = () => {
             )}
 
             {/* View Project Tasks Modal */}
-            {viewProjectModal.isOpen && viewProjectModal.project && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white rounded-none shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] border-t-4 border-[#0B3A2C]">
-                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/80">
-                            <div>
-                                <h3 className="text-lg font-bold text-[#0B3A2C]">Project Tasks: <span className="text-gray-900">{viewProjectModal.project.customerName}</span></h3>
-                                <p className="text-xs text-gray-500 mt-1">Workflow Stage: <span className="font-semibold text-gray-700">{viewProjectModal.project.workflowStage}</span> | Overall Status: <span className="font-semibold text-gray-700">{viewProjectModal.project.status}</span></p>
-                            </div>
-                            <button 
-                                onClick={() => setViewProjectModal({ isOpen: false, project: null })}
-                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-none transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        
-                        <div className="overflow-y-auto overflow-x-auto p-4 sm:p-6">
-                            <table className="w-full text-left text-[10px] sm:text-xs min-w-[500px]">
-                                <thead className="bg-gray-50/70 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
-                                    <tr>
-                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Task Details</th>
-                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Assignee</th>
-                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Status</th>
-                                        <th className="py-2 sm:py-3 px-2 sm:px-4">Deadline</th>
-                                        <th className="py-2 sm:py-3 px-2 sm:px-4 text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {allTasks.filter(t => t.project?._id === viewProjectModal.project._id).map((task) => (
-                                        <tr key={task._id} className="hover:bg-gray-50">
-                                            <td className="py-2 sm:py-3 px-2 sm:px-4">
-                                                <div className="font-bold text-gray-900">{task.taskName}</div>
-                                                <div className="text-[10px] text-gray-500">Step {task.stepNumber}</div>
-                                            </td>
-                                            <td className="py-2 sm:py-3 px-2 sm:px-4">
-                                                {task.assignedTo ? (
-                                                    <span className="font-semibold">{task.assignedTo.name}</span>
-                                                ) : (
-                                                    <span className="text-gray-400 italic">Unassigned</span>
-                                                )}
-                                            </td>
-                                            <td className="py-2 sm:py-3 px-2 sm:px-4 flex flex-col items-start gap-1">
-                                                <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                                                    task.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                                                    task.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                                                    task.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                                                    'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {task.status}
-                                                </span>
-                                                {task.status === 'Submitted' && task.submittedAt && (
-                                                    <span className="text-[10px] text-gray-500 font-medium">Submitted: {new Date(task.submittedAt).toLocaleDateString()}</span>
-                                                )}
-                                                {task.status === 'Approved' && task.approvedAt && (
-                                                    <span className="text-[10px] text-gray-500 font-medium">Approved: {new Date(task.approvedAt).toLocaleDateString()}</span>
-                                                )}
-                                                {task.status === 'Rejected' && task.approvedAt && (
-                                                    <span className="text-[10px] text-red-500 font-medium">Rejected: {new Date(task.approvedAt).toLocaleDateString()}</span>
-                                                )}
-                                            </td>
-                                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-600">
-                                                {task.dueDate ? <CountdownTimer dueDate={task.dueDate} status={task.status} submittedAt={task.submittedAt} opsHeadReminderHours={task.opsHeadReminderHours} /> : 'Not set'}
-                                            </td>
-                                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-[10px] text-gray-500 flex flex-col gap-1 items-center sm:items-start justify-center text-center">
-                                                {task.remarks?.length > 0 && <div className="text-red-500 font-semibold mb-1">Has remarks</div>}
-                                                
-                                                {hasPermission('manage_project_workflow') && task.status !== 'Pending' && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setApproveStatus('Approved'); // Always reset to default
-                                                            setApproveRemark('');
-                                                            setApproveModal({ isOpen: true, task });
-                                                        }}
-                                                        title="View / Review Task"
-                                                        className="px-3 py-1 bg-[#0B3A2C] text-white text-[10px] uppercase font-bold rounded hover:bg-opacity-90 transition-colors"
-                                                    >
-                                                        View
-                                                    </button>
-                                                )}
-                                                
-                                                {/* Assign Task Button */}
-                                                {hasPermission('create_task') && task.status === 'Pending' && task.project?.currentStep === task.stepNumber && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setAssignModal({ isOpen: true, taskId: task._id, projectId: viewProjectModal.project._id });
-                                                            // Fetch project documents
-                                                            apiClient.get(`/operations/projects/${viewProjectModal.project._id}/documents`)
-                                                                .then(res => setProjectDocuments(res.data))
-                                                                .catch(err => console.error("Failed to fetch project docs", err));
-                                                        }}
-                                                        className="px-3 py-1 bg-amber-500 text-white text-[10px] uppercase font-bold rounded hover:bg-amber-600 transition-colors"
-                                                    >
-                                                        Assign Task
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {allTasks.filter(t => t.project?._id === viewProjectModal.project._id).length === 0 && (
-                                        <tr>
-                                            <td colSpan="5" className="text-center py-6 text-gray-500">No tasks generated for this project yet.</td>
-                                        </tr>
+            {viewProjectModal.isOpen && viewProjectModal.project && (() => {
+                const projectTasksList = allTasks.filter(t => t.project?._id === viewProjectModal.project._id);
+                const assignableTasks = projectTasksList.filter(t => t.status !== 'Completed' && t.status !== 'Approved');
+
+                return (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] border-t-4 border-[#0B3A2C]">
+                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/80">
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#0B3A2C]">Project Tasks: <span className="text-gray-900">{viewProjectModal.project.customerName}</span></h3>
+                                    <p className="text-xs text-gray-500 mt-1">Workflow Stage: <span className="font-semibold text-gray-700">{viewProjectModal.project.workflowStage}</span> | Overall Status: <span className="font-semibold text-gray-700">{viewProjectModal.project.status}</span></p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {hasPermission('create_task') && (
+                                        <button
+                                            onClick={() => handleOpenMultiAssignModal(viewProjectModal.project)}
+                                            className="px-3.5 py-1.5 bg-[#0B3A2C] text-white rounded-lg text-xs font-bold hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm"
+                                            title="Assign multiple tasks together (optional to assign all)"
+                                        >
+                                            <Users className="w-3.5 h-3.5 text-emerald-300" />
+                                            Multi-Assign Tasks
+                                        </button>
                                     )}
-                                </tbody>
-                            </table>
+                                    <button 
+                                        onClick={() => {
+                                            setViewProjectModal({ isOpen: false, project: null });
+                                            setSelectedProjectTaskIds([]);
+                                        }}
+                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-none transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Bulk selection action bar */}
+                            {selectedProjectTaskIds.length > 0 && hasPermission('create_task') && (
+                                <div className="bg-emerald-50 border-b border-emerald-200 px-4 sm:px-6 py-2.5 flex items-center justify-between animate-fadeIn">
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+                                        <CheckSquare className="w-4 h-4 text-emerald-600" />
+                                        <span><strong>{selectedProjectTaskIds.length}</strong> tasks selected</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                apiClient.get(`/operations/projects/${viewProjectModal.project._id}/documents`)
+                                                    .then(res => setProjectDocuments(res.data))
+                                                    .catch(err => console.error("Failed to fetch project docs", err));
+                                                setBulkAssigneeId('');
+                                                setSelectedReferenceDocs([]);
+                                                setBulkAssignModal(true);
+                                            }}
+                                            className="px-3 py-1.5 bg-[#0B3A2C] text-white rounded-lg text-xs font-bold hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm"
+                                        >
+                                            <UserPlus className="w-3.5 h-3.5" />
+                                            Assign Selected ({selectedProjectTaskIds.length})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedProjectTaskIds([])}
+                                            className="px-2.5 py-1.5 bg-white text-gray-600 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50"
+                                        >
+                                            Clear Selection
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className="overflow-y-auto overflow-x-auto p-4 sm:p-6">
+                                <table className="w-full text-left text-[10px] sm:text-xs min-w-[500px]">
+                                    <thead className="bg-gray-50/70 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
+                                        <tr>
+                                            {hasPermission('create_task') && (
+                                                <th className="py-2 sm:py-3 px-2 sm:px-3 w-8 text-center">
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={
+                                                            assignableTasks.length > 0 &&
+                                                            assignableTasks.every(t => selectedProjectTaskIds.includes(t._id))
+                                                        }
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedProjectTaskIds(assignableTasks.map(t => t._id));
+                                                            } else {
+                                                                setSelectedProjectTaskIds([]);
+                                                            }
+                                                        }}
+                                                        className="rounded text-[#0B3A2C] focus:ring-[#0B3A2C] cursor-pointer"
+                                                        title="Select all assignable tasks"
+                                                    />
+                                                </th>
+                                            )}
+                                            <th className="py-2 sm:py-3 px-2 sm:px-4">Task Details</th>
+                                            <th className="py-2 sm:py-3 px-2 sm:px-4">Assignee</th>
+                                            <th className="py-2 sm:py-3 px-2 sm:px-4">Status</th>
+                                            <th className="py-2 sm:py-3 px-2 sm:px-4">Deadline</th>
+                                            <th className="py-2 sm:py-3 px-2 sm:px-4 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {projectTasksList.map((task) => (
+                                            <tr key={task._id} className="hover:bg-gray-50">
+                                                {hasPermission('create_task') && (
+                                                    <td className="py-2 sm:py-3 px-2 sm:px-3 text-center">
+                                                        {task.status !== 'Completed' && task.status !== 'Approved' ? (
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={selectedProjectTaskIds.includes(task._id)}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedProjectTaskIds([...selectedProjectTaskIds, task._id]);
+                                                                    } else {
+                                                                        setSelectedProjectTaskIds(selectedProjectTaskIds.filter(id => id !== task._id));
+                                                                    }
+                                                                }}
+                                                                className="rounded text-[#0B3A2C] focus:ring-[#0B3A2C] cursor-pointer"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-gray-300">-</span>
+                                                        )}
+                                                    </td>
+                                                )}
+                                                <td className="py-2 sm:py-3 px-2 sm:px-4">
+                                                    <div className="font-bold text-gray-900">{task.taskName}</div>
+                                                    <div className="text-[10px] text-gray-500">Step {task.stepNumber}</div>
+                                                </td>
+                                                <td className="py-2 sm:py-3 px-2 sm:px-4">
+                                                    {task.assignedTo ? (
+                                                        <span className="font-semibold text-gray-900">{task.assignedTo.name}</span>
+                                                    ) : (
+                                                        <span className="text-gray-400 italic">Unassigned</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 sm:py-3 px-2 sm:px-4 flex flex-col items-start gap-1">
+                                                    <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                                                        task.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                        task.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                        task.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                                        task.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                        {task.status}
+                                                    </span>
+                                                    {task.status === 'Submitted' && task.submittedAt && (
+                                                        <span className="text-[10px] text-gray-500 font-medium">Submitted: {new Date(task.submittedAt).toLocaleDateString()}</span>
+                                                    )}
+                                                    {task.status === 'Approved' && task.approvedAt && (
+                                                        <span className="text-[10px] text-gray-500 font-medium">Approved: {new Date(task.approvedAt).toLocaleDateString()}</span>
+                                                    )}
+                                                    {task.status === 'Rejected' && task.approvedAt && (
+                                                        <span className="text-[10px] text-red-500 font-medium">Rejected: {new Date(task.approvedAt).toLocaleDateString()}</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-600">
+                                                    {task.dueDate ? <CountdownTimer dueDate={task.dueDate} status={task.status} submittedAt={task.submittedAt} opsHeadReminderHours={task.opsHeadReminderHours} /> : 'Not set'}
+                                                </td>
+                                                <td className="py-2 sm:py-3 px-2 sm:px-4 text-[10px] text-gray-500 flex flex-col gap-1 items-center sm:items-start justify-center text-center">
+                                                    {task.remarks?.length > 0 && <div className="text-red-500 font-semibold mb-1">Has remarks</div>}
+                                                    
+                                                    {hasPermission('manage_project_workflow') && task.status !== 'Pending' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setApproveStatus('Approved'); // Always reset to default
+                                                                setApproveRemark('');
+                                                                setApproveModal({ isOpen: true, task });
+                                                            }}
+                                                            title="View / Review Task"
+                                                            className="px-3 py-1 bg-[#0B3A2C] text-white text-[10px] uppercase font-bold rounded hover:bg-opacity-90 transition-colors"
+                                                        >
+                                                            View
+                                                        </button>
+                                                    )}
+                                                    
+                                                    {/* Assign / Reassign Task Button (Not restricted to current step) */}
+                                                    {hasPermission('create_task') && task.status !== 'Completed' && task.status !== 'Approved' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setAssigneeId(task.assignedTo?._id || '');
+                                                                setAssignModal({ isOpen: true, taskId: task._id, projectId: viewProjectModal.project._id });
+                                                                // Fetch project documents
+                                                                apiClient.get(`/operations/projects/${viewProjectModal.project._id}/documents`)
+                                                                    .then(res => setProjectDocuments(res.data))
+                                                                    .catch(err => console.error("Failed to fetch project docs", err));
+                                                            }}
+                                                            className={`px-3 py-1 text-white text-[10px] uppercase font-bold rounded transition-colors ${
+                                                                task.assignedTo ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-500 hover:bg-amber-600'
+                                                            }`}
+                                                            title={task.assignedTo ? "Change Assignee" : "Assign Task"}
+                                                        >
+                                                            {task.assignedTo ? 'Reassign' : 'Assign Task'}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {projectTasksList.length === 0 && (
+                                            <tr>
+                                                <td colSpan={hasPermission('create_task') ? 6 : 5} className="text-center py-6 text-gray-500">No tasks generated for this project yet.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Approve Task Modal */}
             {approveModal.isOpen && (
@@ -935,6 +1142,313 @@ const Projects = () => {
                     </div>
                     </form>
                 </div>
+                </div>
+            )}
+
+            {/* Multi-Task Assignment Modal */}
+            {multiAssignModal.isOpen && multiAssignModal.project && (
+                <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col border-t-4 border-[#0B3A2C]">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/90">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-[#0B3A2C]" />
+                                    Assign Multiple Tasks
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Project: <span className="font-semibold text-gray-800">{multiAssignModal.project?.customerName}</span>
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setMultiAssignModal({ isOpen: false, project: null });
+                                    setSelectedReferenceDocs([]);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Notice & Quick tool */}
+                        <div className="px-6 py-3 bg-emerald-50/70 border-b border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="text-xs text-emerald-900 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0"></span>
+                                <span>
+                                    <strong>Note:</strong> Sabhi tasks ko assign karna mandatory nahi hai. Jin tasks ko assign karna chahte hain unke liye employee select karein, baaki unassigned rahenge.
+                                </span>
+                            </div>
+                            {/* Quick set all */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">Set all active to:</span>
+                                <select
+                                    value={quickAssigneeAll}
+                                    onChange={(e) => setQuickAssigneeAll(e.target.value)}
+                                    className="px-2 py-1 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#0B3A2C]"
+                                >
+                                    <option value="">-- Select Employee --</option>
+                                    {users.map(u => (
+                                        <option key={u._id} value={u._id}>{u.name} ({u.role?.name || u.department || 'Staff'})</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={handleApplyQuickAssignAll}
+                                    disabled={!quickAssigneeAll}
+                                    className="px-2.5 py-1 text-xs font-bold bg-[#0B3A2C] text-white rounded-lg hover:bg-[#124b39] disabled:opacity-50 transition-all"
+                                >
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Task list body */}
+                        <form onSubmit={handleMultiAssignSubmit} className="flex-1 overflow-hidden flex flex-col">
+                            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+                                <div className="space-y-3">
+                                    {allTasks.filter(t => t.project?._id === multiAssignModal.project._id).map((task) => {
+                                        const isCompleted = task.status === 'Completed' || task.status === 'Approved';
+                                        const currentVal = multiAssignments[task._id] || '';
+
+                                        return (
+                                            <div 
+                                                key={task._id} 
+                                                className={`p-4 rounded-xl border transition-all ${
+                                                    isCompleted 
+                                                        ? 'bg-gray-50 border-gray-200 opacity-60' 
+                                                        : currentVal 
+                                                            ? 'bg-emerald-50/40 border-emerald-200 shadow-xs' 
+                                                            : 'bg-white border-gray-200 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-700">
+                                                                Step {task.stepNumber}
+                                                            </span>
+                                                            <h4 className="text-sm font-bold text-gray-900">{task.taskName}</h4>
+                                                            <span className="text-[10px] font-medium text-gray-500">
+                                                                (TAT: {task.tatHours || 24}h)
+                                                            </span>
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                                task.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                                task.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                                task.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-gray-100 text-gray-600'
+                                                            }`}>
+                                                                {task.status}
+                                                            </span>
+                                                        </div>
+                                                        {task.description && (
+                                                            <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="w-full sm:w-64 shrink-0">
+                                                        {isCompleted ? (
+                                                            <div className="text-xs font-semibold text-emerald-700 px-3 py-2 bg-emerald-50 rounded-lg text-center">
+                                                                ✓ Completed by {task.assignedTo?.name || 'Staff'}
+                                                            </div>
+                                                        ) : (
+                                                            <div>
+                                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                                                                    Assign To:
+                                                                </label>
+                                                                <select
+                                                                    value={currentVal}
+                                                                    onChange={(e) => {
+                                                                        setMultiAssignments({
+                                                                            ...multiAssignments,
+                                                                            [task._id]: e.target.value
+                                                                        });
+                                                                    }}
+                                                                    className={`w-full px-3 py-2 text-xs font-medium rounded-lg border focus:outline-none transition-all ${
+                                                                        currentVal 
+                                                                            ? 'border-emerald-500 bg-white text-emerald-950 font-semibold' 
+                                                                            : 'border-gray-200 bg-gray-50 text-gray-600'
+                                                                    }`}
+                                                                >
+                                                                    <option value="">-- Leave Unassigned (Optional) --</option>
+                                                                    {users.map(u => (
+                                                                        <option key={u._id} value={u._id}>
+                                                                            {u.name} ({u.role?.name || u.department || 'Staff'})
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Reference Documents */}
+                                {projectDocuments.length > 0 && (
+                                    <div className="mt-6 pt-4 border-t border-gray-100">
+                                        <label className="block text-xs font-bold text-gray-700 mb-2">
+                                            Attach Reference Documents to Newly Assigned Tasks
+                                        </label>
+                                        <div className="max-h-36 overflow-y-auto space-y-2 border border-gray-200 rounded-xl p-3 bg-gray-50/50">
+                                            {projectDocuments.map((doc, idx) => {
+                                                const isSelected = selectedReferenceDocs.some(d => d.fileUrl === doc.fileUrl);
+                                                return (
+                                                    <label 
+                                                        key={idx} 
+                                                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer border transition-colors ${
+                                                            isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-transparent hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedReferenceDocs([...selectedReferenceDocs, { documentName: doc.documentName, fileUrl: doc.fileUrl }]);
+                                                                } else {
+                                                                    setSelectedReferenceDocs(selectedReferenceDocs.filter(d => d.fileUrl !== doc.fileUrl));
+                                                                }
+                                                            }}
+                                                            className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                        />
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-semibold text-gray-800">{doc.documentName}</span>
+                                                            <span className="text-[10px] text-gray-500">Source: {doc.source}</span>
+                                                        </div>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between shrink-0">
+                                <div className="text-xs text-gray-600 font-medium">
+                                    <span className="font-bold text-gray-900">
+                                        {Object.values(multiAssignments).filter(v => v && v.trim() !== '').length}
+                                    </span> tasks configured to assign
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            setMultiAssignModal({ isOpen: false, project: null });
+                                            setSelectedReferenceDocs([]);
+                                        }}
+                                        className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        disabled={isSavingMultiAssign || Object.values(multiAssignments).filter(v => v && v.trim() !== '').length === 0}
+                                        className="px-5 py-2 text-xs font-bold bg-[#0B3A2C] text-white rounded-lg hover:bg-[#124b39] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm"
+                                    >
+                                        {isSavingMultiAssign ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                                        Confirm & Assign Tasks
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Assign Modal for Selected Rows */}
+            {bulkAssignModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-t-4 border-[#0B3A2C]">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 className="text-base font-bold text-gray-900">Assign Selected Tasks</h2>
+                                <p className="text-xs text-gray-500">{selectedProjectTaskIds.length} tasks selected</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setBulkAssignModal(false);
+                                    setBulkAssigneeId('');
+                                }}
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleBulkAssignSubmit}>
+                            <div className="mb-4">
+                                <label className="block text-xs font-bold text-gray-700 mb-1">
+                                    Select Employee <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    required
+                                    value={bulkAssigneeId}
+                                    onChange={(e) => setBulkAssigneeId(e.target.value)}
+                                    className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#0B3A2C]"
+                                >
+                                    <option value="">-- Select Employee --</option>
+                                    {users.map(u => (
+                                        <option key={u._id} value={u._id}>{u.name} ({u.role?.name || u.department || 'Staff'})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {projectDocuments.length > 0 && (
+                                <div className="mb-4">
+                                    <label className="block text-xs font-bold text-gray-700 mb-2">Attach Reference Documents</label>
+                                    <div className="max-h-36 overflow-y-auto space-y-2 border border-gray-100 rounded-lg p-2 bg-gray-50">
+                                        {projectDocuments.map((doc, idx) => {
+                                            const isSelected = selectedReferenceDocs.some(d => d.fileUrl === doc.fileUrl);
+                                            return (
+                                                <label key={idx} className={`flex items-center gap-2 p-2 rounded cursor-pointer border ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-transparent hover:bg-gray-100'}`}>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedReferenceDocs([...selectedReferenceDocs, { documentName: doc.documentName, fileUrl: doc.fileUrl }]);
+                                                            } else {
+                                                                setSelectedReferenceDocs(selectedReferenceDocs.filter(d => d.fileUrl !== doc.fileUrl));
+                                                            }
+                                                        }}
+                                                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-semibold text-gray-800">{doc.documentName}</span>
+                                                        <span className="text-[10px] text-gray-500">Source: {doc.source}</span>
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 mt-4">
+                                <button 
+                                    type="button" 
+                                    onClick={() => {
+                                        setBulkAssignModal(false);
+                                        setBulkAssigneeId('');
+                                    }} 
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={isSavingMultiAssign || !bulkAssigneeId}
+                                    className="px-4 py-2 text-xs font-bold bg-[#0B3A2C] text-white rounded-lg hover:bg-[#124b39] disabled:opacity-50 transition-colors flex items-center gap-2"
+                                >
+                                    {isSavingMultiAssign ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                                    Assign {selectedProjectTaskIds.length} Tasks
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 

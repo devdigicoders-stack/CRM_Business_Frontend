@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye, Search } from 'lucide-react';
+import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye, Search, Users, UserPlus, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import apiClient from '../api/axiosConfig';
@@ -70,9 +70,13 @@ const Tasks = () => {
   const [submitModal, setSubmitModal] = useState({ isOpen: false, task: null });
   const [approveModal, setApproveModal] = useState({ isOpen: false, task: null });
   const [viewModal, setViewModal] = useState({ isOpen: false, task: null });
+  const [bulkAssignModal, setBulkAssignModal] = useState({ isOpen: false });
 
   // Form states
   const [assigneeId, setAssigneeId] = useState('');
+  const [bulkAssigneeId, setBulkAssigneeId] = useState('');
+  const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+  const [isSavingBulkAssign, setIsSavingBulkAssign] = useState(false);
   const [submitDocs, setSubmitDocs] = useState({}); // { docName: url }
   const [submitRemark, setSubmitRemark] = useState('');
   const [approveStatus, setApproveStatus] = useState('Approved');
@@ -132,6 +136,34 @@ const Tasks = () => {
       fetchTasks();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to assign task');
+    }
+  };
+
+  // Bulk Assign Multiple Tasks (Ops Head)
+  const handleBulkAssignSubmit = async (e) => {
+    e.preventDefault();
+    if (!bulkAssigneeId) {
+      return toast.warning("Please select an employee.");
+    }
+    if (selectedTaskIds.length === 0) {
+      return toast.warning("No tasks selected.");
+    }
+
+    try {
+      setIsSavingBulkAssign(true);
+      const res = await apiClient.put('/operations/tasks/assign-multiple', {
+        taskIds: selectedTaskIds,
+        assignedTo: bulkAssigneeId
+      });
+      toast.success(res.data.message || 'Tasks assigned successfully!');
+      setBulkAssignModal({ isOpen: false });
+      setSelectedTaskIds([]);
+      setBulkAssigneeId('');
+      fetchTasks();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to assign tasks');
+    } finally {
+      setIsSavingBulkAssign(false);
     }
   };
 
@@ -250,11 +282,63 @@ const Tasks = () => {
         </div>
       </div>
 
+      {/* Bulk selection action bar */}
+      {selectedTaskIds.length > 0 && hasPermission('create_task') && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+            <CheckSquare className="w-4 h-4 text-emerald-600" />
+            <span><strong>{selectedTaskIds.length}</strong> tasks selected (Assigning all tasks is optional)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setBulkAssigneeId('');
+                setBulkAssignModal({ isOpen: true });
+              }}
+              className="px-3.5 py-1.5 bg-[#0B3A2C] text-white rounded-lg text-xs font-bold hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Assign Selected Tasks ({selectedTaskIds.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTaskIds([])}
+              className="px-3 py-1.5 bg-white text-gray-600 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Deselect All
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-gray-50/50">
+                {hasPermission('create_task') && (
+                  <th className="px-3 sm:px-4 py-3 sm:py-4 w-10 text-center">
+                    <input 
+                      type="checkbox"
+                      checked={
+                        filteredTasks.length > 0 &&
+                        filteredTasks.filter(t => t.status !== 'Completed' && t.status !== 'Approved').length > 0 &&
+                        filteredTasks.filter(t => t.status !== 'Completed' && t.status !== 'Approved').every(t => selectedTaskIds.includes(t._id))
+                      }
+                      onChange={(e) => {
+                        const assignable = filteredTasks.filter(t => t.status !== 'Completed' && t.status !== 'Approved');
+                        if (e.target.checked) {
+                          setSelectedTaskIds(assignable.map(t => t._id));
+                        } else {
+                          setSelectedTaskIds([]);
+                        }
+                      }}
+                      className="rounded text-[#0B3A2C] focus:ring-[#0B3A2C] cursor-pointer"
+                      title="Select all assignable tasks"
+                    />
+                  </th>
+                )}
                 <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Project & Step</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Task Details</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-600 whitespace-nowrap">Assignee</th>
@@ -266,21 +350,41 @@ const Tasks = () => {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">Loading tasks...</td>
+                  <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">Loading tasks...</td>
                 </tr>
               ) : tasks.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No tasks found.</td>
+                  <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">No tasks found.</td>
                 </tr>
               ) : filteredTasks.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={hasPermission('create_task') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
                     No tasks match your search "{searchTerm}".
                   </td>
                 </tr>
               ) : (
                 filteredTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-gray-50/50 transition-colors">
+                    {hasPermission('create_task') && (
+                      <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
+                        {task.status !== 'Completed' && task.status !== 'Approved' ? (
+                          <input 
+                            type="checkbox"
+                            checked={selectedTaskIds.includes(task._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTaskIds([...selectedTaskIds, task._id]);
+                              } else {
+                                setSelectedTaskIds(selectedTaskIds.filter(id => id !== task._id));
+                              }
+                            }}
+                            className="rounded text-[#0B3A2C] focus:ring-[#0B3A2C] cursor-pointer"
+                          />
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">{task.project?.customerName}</div>
                       <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
@@ -324,13 +428,18 @@ const Tasks = () => {
                         View
                       </button>
 
-                      {/* Ops Head / Authorized: Assign Task */}
-                      {hasPermission('create_task') && task.status === 'Pending' && task.project?.currentStep === task.stepNumber && (
+                      {/* Ops Head / Authorized: Assign or Reassign Task */}
+                      {hasPermission('create_task') && task.status !== 'Completed' && task.status !== 'Approved' && (
                         <button
-                          onClick={() => setAssignModal({ isOpen: true, taskId: task._id })}
-                          className="px-3 py-1.5 bg-[#0B3A2C] text-white text-sm rounded-lg hover:bg-opacity-90 transition-colors"
+                          onClick={() => {
+                            setAssigneeId(task.assignedTo?._id || '');
+                            setAssignModal({ isOpen: true, taskId: task._id });
+                          }}
+                          className={`px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${
+                            task.assignedTo ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-[#0B3A2C] hover:bg-opacity-90'
+                          }`}
                         >
-                          Assign Task
+                          {task.assignedTo ? 'Reassign' : 'Assign Task'}
                         </button>
                       )}
 
@@ -365,6 +474,90 @@ const Tasks = () => {
           </table>
         </div>
       </div>
+
+      {/* Bulk Assign Modal */}
+      {bulkAssignModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 border-t-4 border-[#0B3A2C]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-[#0B3A2C]" />
+                  Assign Multiple Tasks
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Assigning <strong>{selectedTaskIds.length}</strong> selected tasks at once.
+                </p>
+              </div>
+              <button 
+                onClick={() => setBulkAssignModal({ isOpen: false })}
+                className="text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Selected tasks mini list */}
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Selected Tasks ({selectedTaskIds.length}):</label>
+              <div className="max-h-36 overflow-y-auto space-y-1.5 border border-gray-100 rounded-lg p-2.5 bg-gray-50 text-xs">
+                {tasks.filter(t => selectedTaskIds.includes(t._id)).map(t => (
+                  <div key={t._id} className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+                    <div>
+                      <span className="font-semibold text-gray-800">{t.taskName}</span>
+                      <span className="text-[10px] text-gray-500 ml-1.5">({t.project?.customerName || 'Project'})</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold">
+                      Step {t.stepNumber}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleBulkAssignSubmit}>
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Select Employee to Assign <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={bulkAssigneeId}
+                  onChange={(e) => setBulkAssigneeId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#0B3A2C]"
+                >
+                  <option value="">-- Choose Employee --</option>
+                  {users.map(u => (
+                    <option key={u._id} value={u._id}>{u.name} ({u.role?.name || u.department || 'Staff'})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 text-[11px] text-emerald-800 mb-4">
+                Assigning these tasks will set their status to "In Progress" and calculate their TAT deadlines. Assigning all tasks is optional.
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setBulkAssignModal({ isOpen: false })} 
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSavingBulkAssign || !bulkAssigneeId}
+                  className="px-4 py-2 text-xs font-bold bg-[#0B3A2C] text-white rounded-lg hover:bg-[#124b39] disabled:opacity-50 transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  {isSavingBulkAssign ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                  Confirm & Assign ({selectedTaskIds.length})
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Assign Modal */}
       {assignModal.isOpen && (

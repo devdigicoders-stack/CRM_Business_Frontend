@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Phone, User, Clock, Loader2, Eye, X, Mail, Building2, MapPin, FileText, CheckCircle2, Trash2, Search } from 'lucide-react';
+import { Trophy, Phone, User, Clock, Loader2, Eye, X, Mail, Building2, MapPin, FileText, CheckCircle2, Trash2, Search, Briefcase } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
 import Swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
 
 const ClosedWonLeads = () => {
+    const navigate = useNavigate();
     const [leads, setLeads] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -184,6 +186,13 @@ const ClosedWonLeads = () => {
                                         <td className="py-3.5 px-4 text-center">
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button
+                                                    onClick={() => navigate('/dashboard/projects')}
+                                                    className="p-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200 inline-flex items-center gap-1 text-xs font-semibold"
+                                                    title="View Project Tasks & Operations"
+                                                >
+                                                    <Briefcase className="w-3.5 h-3.5" /> Project
+                                                </button>
+                                                <button
                                                     onClick={() => handleViewLead(lead)}
                                                     className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 inline-flex items-center gap-1.5 text-xs font-semibold"
                                                     title="View Full Details"
@@ -218,6 +227,14 @@ const ClosedWonLeads = () => {
                                 <p className="text-xs text-gray-500 mt-0.5">Review complete customer information & documents.</p>
                             </div>
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => navigate('/dashboard/projects')}
+                                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-700 hover:text-white rounded-lg text-xs font-bold transition-colors border border-emerald-200 inline-flex items-center gap-1"
+                                    title="Open Project Operations & Tasks"
+                                >
+                                    <Briefcase className="w-3.5 h-3.5" />
+                                    Project Tasks
+                                </button>
                                 <button
                                     onClick={() => handleDeleteLead(selectedLead._id, selectedLead.customerName)}
                                     className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-xs font-bold transition-colors border border-red-200 inline-flex items-center gap-1"
