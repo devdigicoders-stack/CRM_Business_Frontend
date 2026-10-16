@@ -633,20 +633,9 @@ const Projects = () => {
                                                     Tasks
                                                 </button>
                                                 
-                                                {/* Manage Equipments - Only Ops Head/Admin */}
-                                                {hasPermission('manage_project_workflow') && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setEquipments(project.installedEquipments?.length ? project.installedEquipments : [{ itemName: '', serialNumber: '', quantity: 1 }]);
-                                                            setEquipmentModal({ isOpen: true, project });
-                                                        }}
-                                                        className="px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-500 hover:text-white text-[10px] font-bold rounded transition-colors"
-                                                    >
-                                                        Hardware
-                                                    </button>
-                                                )}
+
                                                 
-                                                {project.status !== 'Pending' && (
+                                                {project.status === 'Completed' && (
                                                     <Link
                                                         to={`/dashboard/projects/${project._id}/receipt`}
                                                         target="_blank"

@@ -33,6 +33,7 @@ import Projects from './pages/Projects';
 import Payments from './pages/Payments';
 import CustomerDocuments from './pages/CustomerDocuments';
 import ProjectReceipt from './pages/ProjectReceipt';
+import Hardware from './pages/Hardware';
 
 import './App.css';
 
@@ -56,6 +57,7 @@ function App() {
           <Route path="sales" element={<Sales />} />
           <Route path="closed-won" element={<ClosedWonLeads />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="hardware" element={<Hardware />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="users" element={<Users />} />

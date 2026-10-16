@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/axiosConfig';
-import { Loader2, Printer, ArrowLeft } from 'lucide-react';
+import { Loader2, Printer, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const ProjectReceipt = () => {
@@ -43,7 +43,46 @@ const ProjectReceipt = () => {
         return (
             <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
                 <h2 className="text-xl font-bold mb-4">Receipt Not Found</h2>
-                <button onClick={() => navigate('/dashboard/projects')} className="text-[#0B3A2C] underline">Go Back</button>
+                <button onClick={() => navigate(-1)} className="text-[#0B3A2C] underline">Go Back</button>
+            </div>
+        );
+    }
+
+    // Receipt is only available once project status is Completed
+    if (project.status !== 'Completed') {
+        return (
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center space-y-4 border-t-4 border-amber-500">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <Lock className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">Receipt Not Available Yet</h2>
+                    <p className="text-sm text-gray-600">
+                        The final Installation & Handover Receipt can only be generated after the project execution is marked as <strong>Completed</strong>.
+                    </p>
+                    <div className="bg-gray-50 p-4 rounded-xl text-left text-xs space-y-2 border border-gray-100">
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Customer:</span> 
+                            <strong className="text-gray-900">{project.customerName}</strong>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Current Status:</span> 
+                            <span className="px-2 py-0.5 rounded font-bold bg-amber-100 text-amber-800">{project.status}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Workflow Stage:</span> 
+                            <span className="font-semibold text-gray-700">{project.workflowStage || 'Pending Registration'}</span>
+                        </div>
+                    </div>
+                    <div className="pt-2 flex justify-center">
+                        <button 
+                            onClick={() => navigate(-1)} 
+                            className="px-6 py-2.5 bg-[#0B3A2C] hover:bg-[#124b39] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> Go Back
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -51,8 +90,8 @@ const ProjectReceipt = () => {
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 font-sans">
             <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
-                <button onClick={() => navigate('/dashboard/projects')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 bg-white px-4 py-2 rounded-lg shadow-sm font-semibold transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Back to Projects
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 bg-white px-4 py-2 rounded-lg shadow-sm font-semibold transition-colors">
+                    <ArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <button onClick={() => window.print()} className="flex items-center gap-2 bg-[#0B3A2C] hover:bg-[#124b39] text-white px-6 py-2 rounded-lg shadow-sm font-bold transition-colors">
                     <Printer className="w-4 h-4" /> Print Receipt

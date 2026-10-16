@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, UserCircle, Briefcase, CheckSquare, 
     Calendar as CalendarIcon, Shield, Building2,
-    Settings, Bell, User, Menu, LogOut, Key, ClipboardList, Trophy, Package, CreditCard, Wallet, Receipt, FileText
+    Settings, Bell, User, Menu, LogOut, Key, ClipboardList, Trophy, Package, CreditCard, Wallet, Receipt, FileText, Cpu
 } from 'lucide-react';
 import apiClient from '../api/axiosConfig';
 
@@ -13,6 +13,7 @@ const navItems = [
     { name: 'Leads', path: '/dashboard/leads', icon: UserCircle, permission: 'view_leads' },
     { name: 'Quotation', path: '/dashboard/sales', icon: Briefcase, permission: 'view_quotations' },
     { name: 'Projects', path: '/dashboard/projects', icon: Briefcase, permission: 'view_projects' },
+    { name: 'Hardware', path: '/dashboard/hardware', icon: Cpu, permission: 'manage_hardware' },
     { name: 'Customers', path: '/dashboard/customers', icon: Users, permission: null },
     { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare, permission: null },
 
@@ -109,13 +110,17 @@ const DashboardLayout = () => {
                         const hasManageLeads = isAdmin || userPermissions.includes('manage_leads');
 
                         // Hide specific tabs from Customers
-                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses', 'Customers'].includes(item.name)) {
+                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses', 'Customers', 'Hardware'].includes(item.name)) {
                             return false;
                         }
 
                         // Show Projects, Payments, Documents tab for Customers
                         if (isCustomer && (item.name === 'Projects' || item.name === 'Payments' || item.name === 'Documents')) {
                             return true;
+                        }
+
+                        if (item.name === 'Hardware') {
+                            return isAdmin || userPermissions.includes('manage_hardware') || userPermissions.includes('manage_project_workflow');
                         }
 
                         // 'Leads' → hide from Sales Executive if they only have my_leads_only, but show if they actually have view_leads or create_lead
@@ -238,6 +243,8 @@ const DashboardLayout = () => {
                                 hasAccess = isAdmin || userPermissions.includes('view_leads') || userPermissions.includes('create_lead');
                             } else if (currentRoute.name === 'Users') {
                                 hasAccess = isAdmin || userPermissions.includes('manage_employees');
+                            } else if (currentRoute.name === 'Hardware') {
+                                hasAccess = !isCustomer && (isAdmin || userPermissions.includes('manage_hardware') || userPermissions.includes('manage_project_workflow'));
                             } else if (isCustomer && (currentRoute.name === 'Projects' || currentRoute.name === 'Payments' || currentRoute.name === 'Documents')) {
                                 hasAccess = true;
                             } else if (!currentRoute.permission || isAdmin) {
