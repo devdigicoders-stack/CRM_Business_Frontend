@@ -107,7 +107,7 @@ const CustomerDocuments = () => {
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
                         <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-[#0B3A2C] shrink-0" />
-                        My Documents
+                        Documents
                     </h1>
                     <p className="text-[11px] sm:text-sm text-gray-500 mt-1">
                         {isCustomer ? 'View and download your important project documents.' : 'Manage and upload documents for customers.'}

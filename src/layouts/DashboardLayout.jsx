@@ -19,7 +19,7 @@ const navItems = [
     { name: 'Calendar', path: '/dashboard/calendar', icon: CalendarIcon, permission: 'view_calendar' },
     { name: 'Products', path: '/dashboard/products', icon: Package, permission: 'manage_products' },
     { name: 'Payments', path: '/dashboard/payments', icon: CreditCard, permission: 'view_payments' },
-    { name: 'My Documents', path: '/dashboard/documents', icon: FileText, permission: 'view_projects' },
+    { name: 'Documents', path: '/dashboard/documents', icon: FileText, permission: 'view_projects' },
     { name: 'Users', path: '/dashboard/users', icon: Shield, permission: 'view_users' },
     { name: 'Incentives', path: '/dashboard/incentives', icon: Trophy, permission: 'add_incentive' },
     { name: 'Roles & Permissions', path: '/dashboard/roles', icon: Key, permission: 'view_roles' },
@@ -114,7 +114,7 @@ const DashboardLayout = () => {
                         }
 
                         // Show Projects, Payments, Documents tab for Customers
-                        if (isCustomer && (item.name === 'Projects' || item.name === 'Payments' || item.name === 'My Documents')) {
+                        if (isCustomer && (item.name === 'Projects' || item.name === 'Payments' || item.name === 'Documents')) {
                             return true;
                         }
 
@@ -238,7 +238,7 @@ const DashboardLayout = () => {
                                 hasAccess = isAdmin || userPermissions.includes('view_leads') || userPermissions.includes('create_lead');
                             } else if (currentRoute.name === 'Users') {
                                 hasAccess = isAdmin || userPermissions.includes('manage_employees');
-                            } else if (isCustomer && (currentRoute.name === 'Projects' || currentRoute.name === 'Payments' || currentRoute.name === 'My Documents')) {
+                            } else if (isCustomer && (currentRoute.name === 'Projects' || currentRoute.name === 'Payments' || currentRoute.name === 'Documents')) {
                                 hasAccess = true;
                             } else if (!currentRoute.permission || isAdmin) {
                                 hasAccess = true;
