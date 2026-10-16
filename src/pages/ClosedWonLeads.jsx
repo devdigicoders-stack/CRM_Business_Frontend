@@ -72,7 +72,8 @@ const ClosedWonLeads = () => {
             (lead.contactNumber && lead.contactNumber.toLowerCase().includes(q)) ||
             (lead.email && lead.email.toLowerCase().includes(q)) ||
             (lead.source && lead.source.toLowerCase().includes(q)) ||
-            (lead.createdBy?.name && lead.createdBy.name.toLowerCase().includes(q))
+            (lead.createdBy?.name && lead.createdBy.name.toLowerCase().includes(q)) ||
+            (lead.assignedTo?.name && lead.assignedTo.name.toLowerCase().includes(q))
         );
     });
 
@@ -150,7 +151,7 @@ const ClosedWonLeads = () => {
                                     <th className="py-3.5 px-4">Customer</th>
                                     <th className="py-3.5 px-4">Contact</th>
                                     <th className="py-3.5 px-4">Source</th>
-                                    <th className="py-3.5 px-4">Created By</th>
+                                    <th className="py-3.5 px-4">Owner / Assigned</th>
                                     <th className="py-3.5 px-4">Status</th>
                                     <th className="py-3.5 px-4 text-center">Actions</th>
                                 </tr>
@@ -173,9 +174,16 @@ const ClosedWonLeads = () => {
                                             {lead.source || 'N/A'}
                                         </td>
                                         <td className="py-3.5 px-4">
-                                            <div className="flex items-center gap-1.5 text-gray-700">
-                                                <User className="w-3.5 h-3.5 text-gray-400" />
-                                                {lead.createdBy?.name || 'Unknown'}
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1.5 text-gray-800 font-medium">
+                                                    <User className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                                    <span>{lead.assignedTo?.name || lead.createdBy?.name || 'Unknown'}</span>
+                                                </div>
+                                                {lead.assignedTo && lead.createdBy && lead.assignedTo._id !== lead.createdBy._id && (
+                                                    <span className="text-[10px] text-gray-400 pl-5">
+                                                        By: {lead.createdBy.name}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="py-3.5 px-4">

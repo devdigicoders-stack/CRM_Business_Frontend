@@ -82,6 +82,11 @@ const Projects = () => {
     const [selectedProjectTaskIds, setSelectedProjectTaskIds] = useState([]);
     const [bulkAssignModal, setBulkAssignModal] = useState(false);
     const [bulkAssigneeId, setBulkAssigneeId] = useState('');
+
+    // Assign Project state
+    const [assignProjectModal, setAssignProjectModal] = useState({ isOpen: false, project: null });
+    const [projectAssigneeId, setProjectAssigneeId] = useState('');
+    const [isSavingProjectAssign, setIsSavingProjectAssign] = useState(false);
     
     const [approveStatus, setApproveStatus] = useState('Approved');
     const [approveRemark, setApproveRemark] = useState('');
@@ -330,6 +335,40 @@ const Projects = () => {
         }
     };
 
+    const handleViewProject = async (project) => {
+        setViewProjectModal({ isOpen: true, project });
+        try {
+            const taskRes = await apiClient.get('/operations/tasks', { params: { projectId: project._id } });
+            if (taskRes.data && Array.isArray(taskRes.data)) {
+                setAllTasks(prev => {
+                    const otherTasks = prev.filter(t => t.project?._id !== project._id);
+                    return [...otherTasks, ...taskRes.data];
+                });
+            }
+        } catch (e) {
+            console.error("Error fetching tasks for project", e);
+        }
+    };
+
+    const handleAssignProjectSubmit = async (e) => {
+        e.preventDefault();
+        if (!projectAssigneeId) return toast.warning("Please select an employee.");
+        try {
+            setIsSavingProjectAssign(true);
+            const res = await apiClient.put(`/operations/projects/${assignProjectModal.project._id}/assign`, {
+                assignedTo: projectAssigneeId
+            });
+            toast.success(res.data.message || 'Project assigned successfully!');
+            setAssignProjectModal({ isOpen: false, project: null });
+            setProjectAssigneeId('');
+            fetchProjects();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to assign project');
+        } finally {
+            setIsSavingProjectAssign(false);
+        }
+    };
+
     const handleOpenCreateModal = () => {
         setFormData({ leadId: '', customerName: '', quotationId: '', remarks: '' });
         setIsCreateModalOpen(true);
@@ -447,6 +486,9 @@ const Projects = () => {
                             (p.customerName && p.customerName.toLowerCase().includes(q)) ||
                             (p.lead?.contactNumber && p.lead.contactNumber.toLowerCase().includes(q)) ||
                             (p.operationHead?.name && p.operationHead.name.toLowerCase().includes(q)) ||
+                            (p.assignedTo?.name && p.assignedTo.name.toLowerCase().includes(q)) ||
+                            (p.lead?.createdBy?.name && p.lead.createdBy.name.toLowerCase().includes(q)) ||
+                            (p.lead?.assignedTo?.name && p.lead.assignedTo.name.toLowerCase().includes(q)) ||
                             (p.workflowStage && p.workflowStage.toLowerCase().includes(q)) ||
                             (p.status && p.status.toLowerCase().includes(q))
                         );
@@ -477,6 +519,9 @@ const Projects = () => {
                         (p.customerName && p.customerName.toLowerCase().includes(q)) ||
                         (p.lead?.contactNumber && p.lead.contactNumber.toLowerCase().includes(q)) ||
                         (p.operationHead?.name && p.operationHead.name.toLowerCase().includes(q)) ||
+                        (p.assignedTo?.name && p.assignedTo.name.toLowerCase().includes(q)) ||
+                        (p.lead?.createdBy?.name && p.lead.createdBy.name.toLowerCase().includes(q)) ||
+                        (p.lead?.assignedTo?.name && p.lead.assignedTo.name.toLowerCase().includes(q)) ||
                         (p.workflowStage && p.workflowStage.toLowerCase().includes(q)) ||
                         (p.status && p.status.toLowerCase().includes(q))
                     );
@@ -496,7 +541,7 @@ const Projects = () => {
                             <thead className="bg-gray-50/70 border-b border-gray-100 text-gray-400 uppercase tracking-wider font-semibold">
                                 <tr>
                                     <th className="py-3.5 px-4">Customer</th>
-                                    <th className="py-3.5 px-4">Ops Head</th>
+                                    <th className="py-3.5 px-4">Assignee / Ops Head</th>
                                     <th className="py-3.5 px-4">Workflow Stage</th>
                                     <th className="py-3.5 px-4">Total Price</th>
                                     <th className="py-3.5 px-4">Amount Paid</th>
@@ -513,6 +558,9 @@ const Projects = () => {
                                         (p.customerName && p.customerName.toLowerCase().includes(q)) ||
                                         (p.lead?.contactNumber && p.lead.contactNumber.toLowerCase().includes(q)) ||
                                         (p.operationHead?.name && p.operationHead.name.toLowerCase().includes(q)) ||
+                                        (p.assignedTo?.name && p.assignedTo.name.toLowerCase().includes(q)) ||
+                                        (p.lead?.createdBy?.name && p.lead.createdBy.name.toLowerCase().includes(q)) ||
+                                        (p.lead?.assignedTo?.name && p.lead.assignedTo.name.toLowerCase().includes(q)) ||
                                         (p.workflowStage && p.workflowStage.toLowerCase().includes(q)) ||
                                         (p.status && p.status.toLowerCase().includes(q))
                                     );
@@ -531,9 +579,28 @@ const Projects = () => {
                                             )}
                                         </td>
                                         <td className="py-3.5 px-4">
-                                            <div className="flex items-center gap-1.5 text-gray-700">
-                                                <User className="w-3.5 h-3.5 text-gray-400" />
-                                                {project.operationHead?.name || 'Unknown'}
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1.5 text-gray-800 font-medium">
+                                                    <User className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                                    <span className="truncate max-w-[130px]">{project.assignedTo?.name || project.operationHead?.name || 'Unassigned'}</span>
+                                                    {hasPermission('manage_project_workflow') && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setProjectAssigneeId(project.assignedTo?._id || project.operationHead?._id || '');
+                                                                setAssignProjectModal({ isOpen: true, project });
+                                                            }}
+                                                            className="text-[10px] text-blue-600 hover:text-blue-800 font-bold ml-1 hover:underline"
+                                                            title="Assign or change assignee"
+                                                        >
+                                                            Assign
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {(project.lead?.createdBy?.name || project.lead?.assignedTo?.name) && (
+                                                    <span className="text-[10px] text-gray-500 pl-5">
+                                                        Lead: {project.lead?.assignedTo?.name || project.lead?.createdBy?.name}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="py-3.5 px-4 text-gray-600 font-medium">
@@ -560,7 +627,7 @@ const Projects = () => {
                                         <td className="py-3.5 px-4 text-center">
                                             <div className="flex flex-col sm:flex-row gap-2 justify-center">
                                                 <button
-                                                    onClick={() => setViewProjectModal({ isOpen: true, project })}
+                                                    onClick={() => handleViewProject(project)}
                                                     className="px-3 py-1.5 bg-[#0B3A2C]/10 text-[#0B3A2C] hover:bg-[#0B3A2C] hover:text-white text-[10px] font-bold rounded transition-colors"
                                                 >
                                                     Tasks
@@ -1545,6 +1612,64 @@ const Projects = () => {
                                 </div>
                             </form>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Assign Project Modal */}
+            {assignProjectModal.isOpen && assignProjectModal.project && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border-t-4 border-[#0B3A2C]">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900">Assign Project</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">{assignProjectModal.project.customerName}</p>
+                            </div>
+                            <button
+                                onClick={() => setAssignProjectModal({ isOpen: false, project: null })}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAssignProjectSubmit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Select Employee / Project Manager
+                                </label>
+                                <select
+                                    value={projectAssigneeId}
+                                    onChange={(e) => setProjectAssigneeId(e.target.value)}
+                                    required
+                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0B3A2C]/20 focus:border-[#0B3A2C]"
+                                >
+                                    <option value="">-- Choose Employee --</option>
+                                    {users.map(u => (
+                                        <option key={u._id} value={u._id}>
+                                            {u.name} ({u.role?.name || u.department || 'Staff'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setAssignProjectModal({ isOpen: false, project: null })}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingProjectAssign || !projectAssigneeId}
+                                    className="px-5 py-2 text-xs font-bold bg-[#0B3A2C] text-white rounded-lg hover:bg-[#124b39] transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                                >
+                                    {isSavingProjectAssign ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                                    Save Assignment
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
