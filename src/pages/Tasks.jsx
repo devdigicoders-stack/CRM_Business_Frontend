@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye, Search, Users, UserPlus, Loader2 } from 'lucide-react';
+import { CheckSquare, User, Clock, AlertCircle, FileText, Check, X, ArrowRight, Play, Upload, Eye, Search, Users, UserPlus, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import apiClient from '../api/axiosConfig';
@@ -226,7 +226,9 @@ const Tasks = () => {
       case 'Pending': return <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">Pending</span>;
       case 'In Progress': return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">In Progress</span>;
       case 'Submitted': return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending Approval</span>;
-      case 'Completed': return <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Completed</span>;
+      case 'Completed': 
+      case 'Approved':
+        return <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-600" /> Closed (Approved)</span>;
       case 'Rejected': return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">Rejected</span>;
       case 'Overdue': return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">Overdue</span>;
       default: return <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">{status}</span>;
@@ -443,7 +445,13 @@ const Tasks = () => {
                       </td>
                     )}
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{task.project?.customerName}</div>
+                      <div 
+                        onClick={() => setViewModal({ isOpen: true, task })}
+                        className="font-bold text-gray-900 hover:text-[#0B3A2C] cursor-pointer transition-colors"
+                        title="Click to open task details"
+                      >
+                        {task.project?.customerName}
+                      </div>
                       <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
                         Step {task.stepNumber} <span className="mx-1">•</span> 
                         {task.project?.currentStep === task.stepNumber ? 
@@ -453,7 +461,13 @@ const Tasks = () => {
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{task.taskName}</div>
+                      <div 
+                        onClick={() => setViewModal({ isOpen: true, task })}
+                        className="font-semibold text-gray-900 hover:text-[#0B3A2C] cursor-pointer transition-colors"
+                        title="Click to open task details"
+                      >
+                        {task.taskName}
+                      </div>
                       <div className="text-[10px] sm:text-xs text-gray-500">{task.department?.name}</div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -796,12 +810,36 @@ const Tasks = () => {
               </button>
             </div>
             <div className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+              {/* Project & Step Banner */}
+              <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider">Project Customer</p>
+                  <p className="text-sm font-bold text-gray-900">{viewModal.task.project?.customerName || 'Project'}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">Workflow Step</span>
+                  <span className="text-xs font-bold px-2 py-0.5 bg-emerald-700 text-white rounded-md">
+                    Step {viewModal.task.stepNumber}
+                  </span>
+                </div>
+              </div>
+
+              {/* Closed Status Notice */}
+              {(viewModal.task.status === 'Completed' || viewModal.task.status === 'Approved') && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>This task has been <strong>Approved & Closed</strong> on {new Date(viewModal.task.completedAt || viewModal.task.updatedAt).toLocaleDateString()}.</span>
+                </div>
+              )}
+
               <div>
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Task Name</p>
                 <p className="text-base font-semibold text-gray-900">{viewModal.task.taskName}</p>
+                <p className="text-xs text-gray-500 mt-0.5 font-medium">{viewModal.task.department?.name || 'Operations'} Department</p>
               </div>
+
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Description</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Description / Instructions</p>
                 <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100">
                   {viewModal.task.description || 'No description provided.'}
                 </p>
@@ -828,9 +866,9 @@ const Tasks = () => {
                       <div key={idx} className="flex items-center justify-between bg-white border border-gray-200 p-2.5 rounded-xl">
                         <span className="text-sm font-medium text-gray-700">{doc.documentName}</span>
                         {doc.isUploaded ? (
-                          <a href={doc.fileUrl.startsWith('http') ? doc.fileUrl : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">View Link</a>
+                          <a href={doc.fileUrl?.startsWith('http') ? doc.fileUrl : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">View Link</a>
                         ) : (
-                          <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Pending</span>
+                          <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Pending Upload</span>
                         )}
                       </div>
                     ))}
@@ -850,6 +888,51 @@ const Tasks = () => {
                     ))}
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Modal Footer with quick actions */}
+            <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setViewModal({ isOpen: false, task: null })}
+                className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+
+              {/* Quick Submit Work button if task is assigned to current user */}
+              {(viewModal.task.status === 'In Progress' || viewModal.task.status === 'Rejected') && viewModal.task.assignedTo?._id === userProfile?._id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const taskToSubmit = viewModal.task;
+                    setViewModal({ isOpen: false, task: null });
+                    setSubmitModal({ isOpen: true, task: taskToSubmit });
+                    setSubmitDocs({});
+                    setSubmitRemark('');
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Submit Work
+                </button>
+              )}
+
+              {/* Quick Review / Approve button for Ops Head / Admin */}
+              {hasPermission('manage_project_workflow') && viewModal.task.status === 'Submitted' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const taskToApprove = viewModal.task;
+                    setViewModal({ isOpen: false, task: null });
+                    setApproveModal({ isOpen: true, task: taskToApprove });
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-[#0B3A2C] hover:bg-[#124b39] text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Review & Approve
+                </button>
               )}
             </div>
           </div>

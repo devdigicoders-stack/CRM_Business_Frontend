@@ -115,7 +115,7 @@ const DashboardLayout = () => {
                         const hasManageLeads = isAdmin || userPermissions.includes('manage_leads');
 
                         // Hide specific tabs from Customers
-                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses', 'Customers', 'Hardware'].includes(item.name)) {
+                        if (isCustomer && ['Departments', 'My Earnings', 'My Expenses', 'Customers', 'Hardware', 'Tasks'].includes(item.name)) {
                             return false;
                         }
 
@@ -135,11 +135,6 @@ const DashboardLayout = () => {
 
                         if (item.name === 'Users') {
                             return isAdmin || userPermissions.includes('manage_employees');
-                        }
-
-                        // Hide Tasks from Admin and Operation Head
-                        if (item.name === 'Tasks' && (user?.role?.name === 'Admin' || user?.role?.name === 'Operation Head')) {
-                            return false;
                         }
 
                         // No permission required = show to all

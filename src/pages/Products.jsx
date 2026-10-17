@@ -14,7 +14,8 @@ import {
   Eye, 
   Info,
   CheckCircle2,
-  FileText
+  FileText,
+  Wrench
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../api/axiosConfig';
@@ -77,11 +78,69 @@ const SOLAR_KIT_TEMPLATES = [
   }
 ];
 
+// Quick template presets for Installation Packages
+const INSTALLATION_PACKAGE_TEMPLATES = [
+  {
+    title: 'Standard Rooftop (1kW - 5kW)',
+    name: 'Standard Rooftop Solar Installation Package (1kW - 5kW)',
+    capacity: '1kW - 5kW',
+    phase: 'Single Phase',
+    price: 25000,
+    basePrice: 18000,
+    gstPercentage: 18,
+    description: 'Complete end-to-end solar installation package for residential rooftops up to 5kW. Includes GI structure assembly, cable laying, inverter mounting, dual earthing pits, and Discom net-metering liaisoning.',
+    kitComponents: [
+      { name: 'GI Rooftop Mounting Structure Assembly & Fastening', quantity: 1, unit: 'Set', specification: 'Hot-Dip GI + SS304 Hardware' },
+      { name: '4 sqmm DC Solar Cables & Conduits Laying', quantity: 30, unit: 'Mtr', specification: 'UV Resistant Dual Insulated' },
+      { name: '6 sqmm AC Armored Cable with Glands & Lugs', quantity: 20, unit: 'Mtr', specification: 'Copper Conductor 2-Core' },
+      { name: 'Inverter & ACDB/DCDB Mounting & Termination', quantity: 1, unit: 'Set', specification: 'Neat Wiring & Wall Mounting' },
+      { name: 'Dual Chemical Earthing Pit Construction & Testing', quantity: 2, unit: 'Sets', specification: 'BFC Compound + Copper Bonded Rod' },
+      { name: 'Discom Net-Metering Liaisoning & Inspection Support', quantity: 1, unit: 'Job', specification: 'Full Paperwork & Inspection' }
+    ]
+  },
+  {
+    title: 'Elevated Structure (3kW - 10kW)',
+    name: 'Elevated High-Rise Rooftop Solar Installation Package (3kW - 10kW)',
+    capacity: '3kW - 10kW',
+    phase: 'Single / Three Phase',
+    price: 55000,
+    basePrice: 42000,
+    gstPercentage: 18,
+    description: 'Elevated high-rise installation package with 8-10 feet rooftop clearance. Features heavy-duty structural columns, civil footing, long-distance cabling, and surge earthing.',
+    kitComponents: [
+      { name: 'Heavy-Duty Elevated GI Structure (8-10 ft clearance)', quantity: 1, unit: 'Set', specification: 'Heavy Gauge Pipe with Cross-Bracing' },
+      { name: 'Civil Concrete Foundation Pillars & Anchor Fastening', quantity: 6, unit: 'Pillars', specification: 'M20 Concrete + Chemical Anchor Bolts' },
+      { name: 'DC & AC Armored Solar Cabling with Flexible Conduits', quantity: 50, unit: 'Mtr', specification: 'Industrial Grade Heavy Duty' },
+      { name: 'Inverter, ACDB/DCDB Mounting & Safety Tagging', quantity: 1, unit: 'Set', specification: 'IP65 Enclosure Mount' },
+      { name: 'Chemical Earthing (3 Pits) & Lightning Arrester Setup', quantity: 1, unit: 'Set', specification: 'Copper Conventional Arrester' },
+      { name: 'Net-Metering Testing & Commissioning Signoff', quantity: 1, unit: 'Job', specification: 'Joint Inspection with Discom' }
+    ]
+  },
+  {
+    title: 'Commercial Turnkey (10kW - 25kW)',
+    name: 'Commercial Turnkey EPC Solar Installation Package (10kW - 25kW)',
+    capacity: '10kW - 25kW',
+    phase: 'Three Phase',
+    price: 120000,
+    basePrice: 90000,
+    gstPercentage: 18,
+    description: 'Comprehensive commercial & industrial turnkey installation package. Covers full mechanical assembly, industrial cable tray routing, multi-pit chemical earthing, and CEIG approvals.',
+    kitComponents: [
+      { name: 'Industrial High-Tensile Mounting Structure Assembly', quantity: 1, unit: 'Set', specification: 'Wind Load Certified Up to 150 km/h' },
+      { name: 'Array Combiner Box, DCDB, ACDB & Inverter Setup', quantity: 1, unit: 'Set', specification: 'Three-Phase 415V Industrial' },
+      { name: 'Industrial AC/DC Heavy-Duty Cabling & Perforated Trays', quantity: 100, unit: 'Mtr', specification: 'GI Perforated Trays + XLPE Cables' },
+      { name: '4-Pit Chemical Earthing & ESE Lightning Arrester', quantity: 1, unit: 'Set', specification: 'Advanced Early Streamer Arrester' },
+      { name: 'CEIG Electrical Safety Approval Liaisoning', quantity: 1, unit: 'Job', specification: 'Government Drawing & Safety Audit' },
+      { name: 'Testing, Commissioning & Grid Synchronization', quantity: 1, unit: 'Job', specification: 'Performance Ratio (PR) Testing' }
+    ]
+  }
+];
+
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'Product' | 'Service' | 'Kit'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'Product' | 'Service' | 'Kit' | 'Installation Package'
 
   // Standard Product/Service Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,8 +155,9 @@ const Products = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Dedicated Kit Modal State
+  // Dedicated Kit & Installation Package Modal State
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
+  const [packageType, setPackageType] = useState('Kit'); // 'Kit' | 'Installation Package'
   const [editingKitId, setEditingKitId] = useState(null);
   const [kitFormData, setKitFormData] = useState({
     name: '',
@@ -144,16 +204,17 @@ const Products = () => {
   };
 
   const openEditModal = (product) => {
-    if (product.itemType === 'Kit') {
-      // Open the dedicated Kit modal for kits
+    if (product.itemType === 'Kit' || product.itemType === 'Installation Package') {
+      // Open the dedicated package builder modal
       setEditingKitId(product._id);
+      setPackageType(product.itemType);
       setKitFormData({
         name: product.name,
         capacity: product.capacity || '',
         phase: product.phase || '',
         basePrice: product.basePrice || '',
         price: product.price,
-        gstPercentage: product.gstPercentage ?? 12,
+        gstPercentage: product.gstPercentage ?? (product.itemType === 'Installation Package' ? 18 : 12),
         description: product.description || '',
         kitComponents: product.kitComponents && product.kitComponents.length > 0 
           ? product.kitComponents 
@@ -202,7 +263,7 @@ const Products = () => {
   // Dedicated Kit Modal Handlers
   const openCreateKitModal = () => {
     setEditingKitId(null);
-    // Load default 3kW template
+    setPackageType('Kit');
     applyKitTemplate(SOLAR_KIT_TEMPLATES[0]);
     setIsKitModalOpen(true);
   };
@@ -215,6 +276,28 @@ const Products = () => {
       basePrice: tmpl.basePrice || '',
       price: tmpl.price || '',
       gstPercentage: tmpl.gstPercentage || 12,
+      description: tmpl.description || '',
+      kitComponents: tmpl.kitComponents.map(c => ({ ...c }))
+    });
+    toast.info(`Loaded "${tmpl.title}" template! Customize as needed.`);
+  };
+
+  // Dedicated Installation Package Handlers
+  const openCreateInstallationModal = () => {
+    setEditingKitId(null);
+    setPackageType('Installation Package');
+    applyInstallationTemplate(INSTALLATION_PACKAGE_TEMPLATES[0]);
+    setIsKitModalOpen(true);
+  };
+
+  const applyInstallationTemplate = (tmpl) => {
+    setKitFormData({
+      name: tmpl.name,
+      capacity: tmpl.capacity,
+      phase: tmpl.phase,
+      basePrice: tmpl.basePrice || '',
+      price: tmpl.price || '',
+      gstPercentage: tmpl.gstPercentage || 18,
       description: tmpl.description || '',
       kitComponents: tmpl.kitComponents.map(c => ({ ...c }))
     });
@@ -246,19 +329,19 @@ const Products = () => {
 
   const handleSaveKit = async () => {
     if (!kitFormData.name.trim() || kitFormData.price === '') {
-      toast.error('Kit Name and Selling Price are required');
+      toast.error('Package Name and Selling Price are required');
       return;
     }
 
     const cleanComponents = kitFormData.kitComponents.filter(c => c.name.trim() !== '');
     if (cleanComponents.length === 0) {
-      toast.warning('Please add at least one component in this Kit');
+      toast.warning('Please add at least one component in this Package');
       return;
     }
 
     const payload = {
       ...kitFormData,
-      itemType: 'Kit',
+      itemType: packageType,
       kitComponents: cleanComponents
     };
 
@@ -267,15 +350,15 @@ const Products = () => {
       if (editingKitId) {
         const res = await apiClient.put(`/master/products/${editingKitId}`, payload);
         setProducts(products.map(p => p._id === editingKitId ? res.data.product : p));
-        toast.success('Solar Kit updated successfully!');
+        toast.success(`${packageType === 'Installation Package' ? 'Installation Package' : 'Solar Kit'} updated successfully!`);
       } else {
         const res = await apiClient.post('/master/products', payload);
         setProducts([...products, res.data.product]);
-        toast.success('Solar Kit created successfully!');
+        toast.success(`${packageType === 'Installation Package' ? 'Installation Package' : 'Solar Kit'} created successfully!`);
       }
       setIsKitModalOpen(false);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save kit');
+      toast.error(err.response?.data?.message || 'Failed to save package');
     } finally {
       setIsSaving(false);
     }
@@ -296,6 +379,7 @@ const Products = () => {
   const productCount = products.filter(p => p.itemType === 'Product' || !p.itemType).length;
   const serviceCount = products.filter(p => p.itemType === 'Service').length;
   const kitCount = products.filter(p => p.itemType === 'Kit').length;
+  const installPackageCount = products.filter(p => p.itemType === 'Installation Package').length;
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = 
@@ -309,6 +393,7 @@ const Products = () => {
     if (activeTab === 'Product') return p.itemType === 'Product' || !p.itemType;
     if (activeTab === 'Service') return p.itemType === 'Service';
     if (activeTab === 'Kit') return p.itemType === 'Kit';
+    if (activeTab === 'Installation Package') return p.itemType === 'Installation Package';
     return true;
   });
 
@@ -319,19 +404,29 @@ const Products = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
             <Package className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0" />
-            Products & Services
+            Products & Packages
           </h1>
           <p className="text-[11px] sm:text-sm text-gray-500 mt-1">
-            Manage your product, service, and Solar Kit catalogue — these appear in Quotation creation.
+            Manage your Products, Services, Solar Kits, and Installation Packages — available for Quotation creation.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {/* Create Installation Package Button */}
+          <button
+            onClick={openCreateInstallationModal}
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all hover:scale-[1.01] shrink-0"
+            title="Create Installation, Mounting & Commissioning Service Package"
+          >
+            <Wrench className="w-4 h-4" />
+            <span>Create Installation Package</span>
+          </button>
+
           {/* Create Kit Button */}
           <button
             onClick={openCreateKitModal}
-            className="inline-flex items-center justify-center gap-2 px-4 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all hover:scale-[1.01] shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all hover:scale-[1.01] shrink-0"
             title="Assemble solar panels, inverters and accessories into a package kit"
           >
             <Boxes className="w-4 h-4" />
@@ -341,7 +436,7 @@ const Products = () => {
           {/* Add Product Button */}
           <button
             onClick={openAddModal}
-            className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#0B3A2C] text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-all hover:scale-[1.01] shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#0B3A2C] text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-[#0a2f23] transition-all hover:scale-[1.01] shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Add Product</span>
@@ -373,6 +468,17 @@ const Products = () => {
           >
             <Boxes className="w-3.5 h-3.5" />
             Solar Kits ({kitCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('Installation Package')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'Installation Package' 
+                ? 'bg-teal-600 text-white shadow-sm' 
+                : 'text-teal-800 hover:text-teal-900 bg-teal-50/60'
+            }`}
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            Installation Packages ({installPackageCount})
           </button>
           <button
             onClick={() => setActiveTab('Product')}
@@ -443,6 +549,8 @@ const Products = () => {
               <tbody className="divide-y divide-gray-100">
                 {filteredProducts.map((product, idx) => {
                   const isKit = product.itemType === 'Kit';
+                  const isInstallPackage = product.itemType === 'Installation Package';
+                  const isBundle = isKit || isInstallPackage;
                   const compCount = product.kitComponents?.length || 0;
 
                   return (
@@ -455,6 +563,11 @@ const Products = () => {
                           <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-100 text-amber-800 border border-amber-200/80 inline-flex items-center gap-1">
                             <Boxes className="w-3.5 h-3.5 text-amber-600" />
                             Solar Kit
+                          </span>
+                        ) : isInstallPackage ? (
+                          <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-teal-100 text-teal-800 border border-teal-200/80 inline-flex items-center gap-1">
+                            <Wrench className="w-3.5 h-3.5 text-teal-600" />
+                            Installation Package
                           </span>
                         ) : product.itemType === 'Service' ? (
                           <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-100 text-purple-700">
@@ -471,15 +584,19 @@ const Products = () => {
                       <td className="px-5 py-4 min-w-[260px]">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            isKit ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-600'
+                            isInstallPackage 
+                              ? 'bg-teal-100 text-teal-700' 
+                              : (isKit ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-600')
                           }`}>
-                            {isKit ? <Boxes className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+                            {isInstallPackage ? <Wrench className="w-4 h-4" /> : (isKit ? <Boxes className="w-4 h-4" /> : <Package className="w-4 h-4" />)}
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900 break-words flex items-center gap-2">
                               <span>{product.name}</span>
                               {product.capacity && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isInstallPackage ? 'bg-teal-100 text-teal-900' : 'bg-amber-100 text-amber-900'
+                                }`}>
                                   {product.capacity}
                                 </span>
                               )}
@@ -489,13 +606,15 @@ const Products = () => {
                                 </span>
                               )}
                             </div>
-                            {isKit && compCount > 0 && (
+                            {isBundle && compCount > 0 && (
                               <button
                                 type="button"
                                 onClick={() => setViewingKit(product)}
-                                className="text-[11px] font-semibold text-amber-600 hover:text-amber-800 mt-0.5 flex items-center gap-1"
+                                className={`text-[11px] font-semibold mt-0.5 flex items-center gap-1 ${
+                                  isInstallPackage ? 'text-teal-600 hover:text-teal-800' : 'text-amber-600 hover:text-amber-800'
+                                }`}
                               >
-                                <span>Includes {compCount} Components (Panels, Inverter, BOS)</span>
+                                <span>Includes {compCount} {isInstallPackage ? 'Inclusions (Structure, Cabling, Labor)' : 'Components (Panels, Inverter, BOS)'}</span>
                                 <Eye className="w-3 h-3" />
                               </button>
                             )}
@@ -524,7 +643,7 @@ const Products = () => {
 
                       {/* Inclusions / Description */}
                       <td className="px-5 py-4 text-gray-500 text-xs max-w-xs">
-                        {isKit && compCount > 0 ? (
+                        {isBundle && compCount > 0 ? (
                           <div className="flex flex-wrap gap-1 max-w-xs">
                             {product.kitComponents.slice(0, 3).map((c, i) => (
                               <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[10px] font-medium">
@@ -532,7 +651,9 @@ const Products = () => {
                               </span>
                             ))}
                             {compCount > 3 && (
-                              <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded text-[10px] font-bold">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                isInstallPackage ? 'bg-teal-50 text-teal-700' : 'bg-amber-50 text-amber-700'
+                              }`}>
                                 +{compCount - 3} more
                               </span>
                             )}
@@ -545,11 +666,13 @@ const Products = () => {
                       {/* Actions */}
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
-                          {isKit && (
+                          {isBundle && (
                             <button
                               onClick={() => setViewingKit(product)}
-                              className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                              title="View Kit Breakdown"
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isInstallPackage ? 'text-teal-600 hover:bg-teal-50' : 'text-amber-600 hover:bg-amber-50'
+                              }`}
+                              title={isInstallPackage ? 'View Package Scope' : 'View Kit Breakdown'}
                             >
                               <Eye className="w-4 h-4" />
                             </button>
@@ -578,29 +701,43 @@ const Products = () => {
           </div>
           <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-400 flex items-center justify-between">
             <span>Total: <strong className="text-gray-700">{filteredProducts.length}</strong> item(s)</span>
-            <span className="text-gray-400">Solar Kits: <strong className="text-amber-700">{kitCount}</strong> | Products: <strong className="text-blue-700">{productCount}</strong></span>
+            <span className="text-gray-400">Solar Kits: <strong className="text-amber-700">{kitCount}</strong> | Installation Packages: <strong className="text-teal-700">{installPackageCount}</strong> | Products: <strong className="text-blue-700">{productCount}</strong></span>
           </div>
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* DEDICATED CREATE / EDIT SOLAR KIT BUILDER MODAL */}
+      {/* DEDICATED CREATE / EDIT SOLAR KIT & INSTALLATION PACKAGE BUILDER MODAL */}
       {/* ======================================================== */}
       {isKitModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm animate-fadeIn overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] border-t-4 border-amber-500 my-auto">
+          <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] border-t-4 my-auto ${
+            packageType === 'Installation Package' ? 'border-teal-500' : 'border-amber-500'
+          }`}>
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-amber-50/50 to-white">
+            <div className={`px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r ${
+              packageType === 'Installation Package' 
+                ? 'from-teal-500/10 via-teal-50/50 to-white' 
+                : 'from-amber-500/10 via-amber-50/50 to-white'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-500 text-white rounded-xl flex items-center justify-center shadow-sm">
-                  <Boxes className="w-5 h-5" />
+                <div className={`w-10 h-10 text-white rounded-xl flex items-center justify-center shadow-sm ${
+                  packageType === 'Installation Package' ? 'bg-teal-600' : 'bg-amber-500'
+                }`}>
+                  {packageType === 'Installation Package' ? <Wrench className="w-5 h-5" /> : <Boxes className="w-5 h-5" />}
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">
-                    {editingKitId ? 'Edit Solar Kit / Package' : 'Assemble Solar Kit / Package'}
+                    {editingKitId 
+                      ? (packageType === 'Installation Package' ? 'Edit Installation Package' : 'Edit Solar Kit')
+                      : (packageType === 'Installation Package' ? 'Create Installation Package' : 'Assemble Solar Kit')
+                    }
                   </h2>
                   <p className="text-xs text-gray-500">
-                    Combine solar panels, inverters, and BOS accessories into an all-in-one bundle.
+                    {packageType === 'Installation Package'
+                      ? 'Define turnkey installation, civil foundation, mounting structure, cabling and labor scope.'
+                      : 'Combine solar panels, inverters, and BOS accessories into an all-in-one bundle.'
+                    }
                   </p>
                 </div>
               </div>
@@ -613,23 +750,71 @@ const Products = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6">
+            <div className="p-6 overflow-y-auto space-y-5">
+              {/* Category Switcher (when creating new) */}
+              {!editingKitId && (
+                <div className="flex items-center gap-2 p-1.5 bg-gray-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPackageType('Kit');
+                      applyKitTemplate(SOLAR_KIT_TEMPLATES[0]);
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      packageType === 'Kit' 
+                        ? 'bg-white text-amber-800 shadow-sm border border-amber-200' 
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    <Boxes className="w-4 h-4 text-amber-600" />
+                    <span>Solar Kit (Hardware Bundle)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPackageType('Installation Package');
+                      applyInstallationTemplate(INSTALLATION_PACKAGE_TEMPLATES[0]);
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      packageType === 'Installation Package' 
+                        ? 'bg-white text-teal-800 shadow-sm border border-teal-200' 
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    <Wrench className="w-4 h-4 text-teal-600" />
+                    <span>Installation Package (Civil, Structure, Services)</span>
+                  </button>
+                </div>
+              )}
+
               {/* Quick Template Presets */}
               {!editingKitId && (
-                <div className="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/70">
-                  <div className="text-xs font-bold text-amber-900 mb-2 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Quick 1-Click Solar Kit Presets:</span>
+                <div className={`p-3.5 rounded-xl border ${
+                  packageType === 'Installation Package' ? 'bg-teal-50/60 border-teal-200/70' : 'bg-amber-50/60 border-amber-200/70'
+                }`}>
+                  <div className={`text-xs font-bold mb-2 flex items-center gap-1.5 ${
+                    packageType === 'Installation Package' ? 'text-teal-900' : 'text-amber-900'
+                  }`}>
+                    <Sparkles className={`w-3.5 h-3.5 ${packageType === 'Installation Package' ? 'text-teal-600' : 'text-amber-600'}`} />
+                    <span>Quick 1-Click {packageType === 'Installation Package' ? 'Installation Package' : 'Solar Kit'} Presets:</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {SOLAR_KIT_TEMPLATES.map((tmpl, i) => (
+                    {(packageType === 'Installation Package' ? INSTALLATION_PACKAGE_TEMPLATES : SOLAR_KIT_TEMPLATES).map((tmpl, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => applyKitTemplate(tmpl)}
-                        className="px-3 py-1.5 bg-white hover:bg-amber-100/70 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                        onClick={() => packageType === 'Installation Package' ? applyInstallationTemplate(tmpl) : applyKitTemplate(tmpl)}
+                        className={`px-3 py-1.5 bg-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 ${
+                          packageType === 'Installation Package' 
+                            ? 'hover:bg-teal-100/70 text-teal-900 border border-teal-300' 
+                            : 'hover:bg-amber-100/70 text-amber-900 border border-amber-300'
+                        }`}
                       >
-                        <Boxes className="w-3.5 h-3.5 text-amber-600" />
+                        {packageType === 'Installation Package' ? (
+                          <Wrench className="w-3.5 h-3.5 text-teal-600" />
+                        ) : (
+                          <Boxes className="w-3.5 h-3.5 text-amber-600" />
+                        )}
                         <span>{tmpl.title}</span>
                       </button>
                     ))}
@@ -637,18 +822,22 @@ const Products = () => {
                 </div>
               )}
 
-              {/* Kit Details */}
+              {/* Package Details */}
               <div className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">1. Kit Overview</h3>
+                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  1. {packageType === 'Installation Package' ? 'Installation Package Overview' : 'Kit Overview'}
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Kit Name *</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      {packageType === 'Installation Package' ? 'Package Name *' : 'Kit Name *'}
+                    </label>
                     <input
                       type="text"
                       value={kitFormData.name}
                       onChange={(e) => setKitFormData(f => ({ ...f, name: e.target.value }))}
-                      placeholder="e.g. TATA 3kW Single Phase On-Grid Rooftop Solar Kit"
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-semibold"
+                      placeholder={packageType === 'Installation Package' ? 'e.g. Standard Rooftop Turnkey Installation (1-5 kW)' : 'e.g. TATA 3kW Single Phase On-Grid Rooftop Solar Kit'}
+                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-semibold"
                     />
                   </div>
                   <div>
@@ -657,8 +846,8 @@ const Products = () => {
                       type="text"
                       value={kitFormData.capacity}
                       onChange={(e) => setKitFormData(f => ({ ...f, capacity: e.target.value }))}
-                      placeholder="e.g. 3kW, 5kW, 10kW"
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                      placeholder="e.g. 1-5kW, 3kW, 10kW"
+                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
                 </div>
@@ -669,12 +858,13 @@ const Products = () => {
                     <select
                       value={kitFormData.phase}
                       onChange={(e) => setKitFormData(f => ({ ...f, phase: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                     >
                       <option value="Single Phase">Single Phase</option>
                       <option value="Three Phase">Three Phase</option>
                       <option value="Off-Grid">Off-Grid</option>
                       <option value="Hybrid">Hybrid</option>
+                      <option value="Commercial">Commercial</option>
                     </select>
                   </div>
                   <div>
@@ -684,20 +874,22 @@ const Products = () => {
                       min="0"
                       value={kitFormData.basePrice}
                       onChange={(e) => setKitFormData(f => ({ ...f, basePrice: e.target.value }))}
-                      placeholder="e.g. 125000"
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-500"
+                      placeholder="e.g. 25000"
+                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Package Selling Price (₹) *</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Selling Price (₹) *</label>
                     <input
                       type="number"
                       min="0"
                       required
                       value={kitFormData.price}
                       onChange={(e) => setKitFormData(f => ({ ...f, price: e.target.value }))}
-                      placeholder="e.g. 155000"
-                      className="w-full px-3.5 py-2 border border-amber-300 bg-amber-50/20 rounded-lg text-sm font-bold text-emerald-800 focus:outline-none focus:border-amber-500"
+                      placeholder="e.g. 35000"
+                      className={`w-full px-3.5 py-2 border rounded-lg text-sm font-bold text-emerald-800 focus:outline-none ${
+                        packageType === 'Installation Package' ? 'border-teal-300 bg-teal-50/20' : 'border-amber-300 bg-amber-50/20'
+                      }`}
                     />
                   </div>
                   <div>
@@ -708,39 +900,45 @@ const Products = () => {
                       max="100"
                       value={kitFormData.gstPercentage}
                       onChange={(e) => setKitFormData(f => ({ ...f, gstPercentage: e.target.value }))}
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-500"
+                      className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Description / Product Overview</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Description / Overview</label>
                   <textarea
                     rows={2}
                     value={kitFormData.description}
                     onChange={(e) => setKitFormData(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Short summary of this solar kit package..."
-                    className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-500 resize-none"
+                    placeholder={packageType === 'Installation Package' ? 'Scope of installation, mounting structure, cabling, and civil works...' : 'Short summary of this solar kit package...'}
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
                   />
                 </div>
               </div>
 
-              {/* Kit Components Builder */}
+              {/* Kit / Package Components Builder */}
               <div className="space-y-3 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <Layers className="w-4 h-4 text-amber-600" />
-                      <span>2. Kit Components & Inclusions ({kitFormData.kitComponents.length} items)</span>
+                      <Layers className={`w-4 h-4 ${packageType === 'Installation Package' ? 'text-teal-600' : 'text-amber-600'}`} />
+                      <span>
+                        2. {packageType === 'Installation Package' ? 'Package Scope & Inclusions' : 'Kit Components & Inclusions'} ({kitFormData.kitComponents.length} items)
+                      </span>
                     </h3>
                     <p className="text-[11px] text-gray-500">
-                      When this Kit is chosen in a Quotation, these individual items will be added automatically.
+                      When this {packageType === 'Installation Package' ? 'Package' : 'Kit'} is chosen in a Quotation, these individual items will be added automatically.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={handleAddKitComponentRow}
-                    className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 border ${
+                      packageType === 'Installation Package' 
+                        ? 'bg-teal-50 hover:bg-teal-100 text-teal-800 border-teal-200' 
+                        : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                    }`}
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Item</span>
@@ -752,7 +950,7 @@ const Products = () => {
                   {kitFormData.kitComponents.map((comp, idx) => (
                     <div 
                       key={idx} 
-                      className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-amber-300 transition-colors"
+                      className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-emerald-400 transition-colors"
                     >
                       <div className="flex-1">
                         <input
@@ -760,8 +958,8 @@ const Products = () => {
                           required
                           value={comp.name}
                           onChange={(e) => handleKitComponentChange(idx, 'name', e.target.value)}
-                          placeholder="e.g. Mono PERC Solar Panels"
-                          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-amber-500"
+                          placeholder={packageType === 'Installation Package' ? 'e.g. GI Elevated Mounting Structure / ACDB Cabling' : 'e.g. Mono PERC Solar Panels'}
+                          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div className="w-full sm:w-24">
@@ -772,20 +970,21 @@ const Products = () => {
                           value={comp.quantity}
                           onChange={(e) => handleKitComponentChange(idx, 'quantity', Number(e.target.value))}
                           placeholder="Qty"
-                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center focus:outline-none focus:border-amber-500"
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div className="w-full sm:w-24">
                         <select
                           value={comp.unit || 'Nos'}
                           onChange={(e) => handleKitComponentChange(idx, 'unit', e.target.value)}
-                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-amber-500"
+                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500"
                         >
                           <option value="Nos">Nos</option>
                           <option value="Sets">Sets</option>
                           <option value="Mtr">Mtr</option>
                           <option value="Pkt">Pkt</option>
                           <option value="Lot">Lot</option>
+                          <option value="Job">Job</option>
                         </select>
                       </div>
                       <div className="flex-1">
@@ -793,8 +992,8 @@ const Products = () => {
                           type="text"
                           value={comp.specification || ''}
                           onChange={(e) => handleKitComponentChange(idx, 'specification', e.target.value)}
-                          placeholder="Spec: 540W Tier-1 / 3kW IP65"
-                          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:border-amber-500"
+                          placeholder="Spec: Hot-dip GI 80 micron / 4 sqmm Cu"
+                          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <button
@@ -829,10 +1028,22 @@ const Products = () => {
                   type="button"
                   onClick={handleSaveKit}
                   disabled={isSaving}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                  className={`px-6 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 ${
+                    packageType === 'Installation Package'
+                      ? 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800'
+                      : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700'
+                  }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{isSaving ? 'Saving Kit...' : (editingKitId ? 'Update Kit' : 'Save Solar Kit')}</span>
+                  <span>
+                    {isSaving 
+                      ? 'Saving...' 
+                      : (editingKitId 
+                          ? (packageType === 'Installation Package' ? 'Update Installation Package' : 'Update Solar Kit')
+                          : (packageType === 'Installation Package' ? 'Save Installation Package' : 'Save Solar Kit')
+                        )
+                    }
+                  </span>
                 </button>
               </div>
             </div>
@@ -841,18 +1052,31 @@ const Products = () => {
       )}
 
       {/* ======================================================== */}
-      {/* PREVIEW KIT BREAKDOWN MODAL */}
+      {/* PREVIEW KIT & INSTALLATION PACKAGE BREAKDOWN MODAL */}
       {/* ======================================================== */}
       {viewingKit && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-amber-500">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-amber-50/50">
+          <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border-t-4 ${
+            viewingKit.itemType === 'Installation Package' ? 'border-teal-500' : 'border-amber-500'
+          }`}>
+            <div className={`p-5 border-b border-gray-100 flex items-center justify-between ${
+              viewingKit.itemType === 'Installation Package' ? 'bg-teal-50/50' : 'bg-amber-50/50'
+            }`}>
               <div className="flex items-center gap-2.5">
-                <Boxes className="w-5 h-5 text-amber-600" />
+                {viewingKit.itemType === 'Installation Package' ? (
+                  <Wrench className="w-5 h-5 text-teal-600" />
+                ) : (
+                  <Boxes className="w-5 h-5 text-amber-600" />
+                )}
                 <div>
                   <h3 className="font-bold text-gray-900 text-base">{viewingKit.name}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {viewingKit.capacity && <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">{viewingKit.capacity}</span>}
+                    {viewingKit.itemType === 'Installation Package' ? (
+                      <span className="text-[10px] font-bold bg-teal-100 text-teal-900 px-2 py-0.5 rounded">Installation Package</span>
+                    ) : (
+                      <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">Solar Kit</span>
+                    )}
+                    {viewingKit.capacity && <span className="text-[10px] font-bold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">{viewingKit.capacity}</span>}
                     {viewingKit.phase && <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{viewingKit.phase}</span>}
                     <span className="text-xs font-bold text-emerald-700">₹{Number(viewingKit.price).toLocaleString('en-IN')}</span>
                   </div>
@@ -872,7 +1096,7 @@ const Products = () => {
 
               <div>
                 <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5">
-                  Included Components ({viewingKit.kitComponents?.length || 0}):
+                  Included Inclusions & Components ({viewingKit.kitComponents?.length || 0}):
                 </h4>
                 <div className="space-y-2">
                   {viewingKit.kitComponents?.map((comp, i) => (
@@ -883,7 +1107,11 @@ const Products = () => {
                           <div className="text-[11px] text-gray-500">{comp.specification}</div>
                         )}
                       </div>
-                      <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-bold rounded-lg text-xs">
+                      <span className={`px-2.5 py-1 font-bold rounded-lg text-xs ${
+                        viewingKit.itemType === 'Installation Package'
+                          ? 'bg-teal-100 text-teal-900'
+                          : 'bg-amber-100 text-amber-900'
+                      }`}>
                         {comp.quantity} {comp.unit || 'Nos'}
                       </span>
                     </div>

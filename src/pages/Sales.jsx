@@ -209,12 +209,14 @@ const Sales = () => {
     }));
   };
 
-  // For selecting a product or kit — if kit, expands into individual component line items
+  // For selecting a product or kit/package — if bundle, expands into individual component line items
   const handleProductSelect = (index, productName) => {
     const selected = productsList.find(p => p.name === productName);
     if (!selected) return;
 
-    if (selected.itemType === 'Kit' && selected.kitComponents && selected.kitComponents.length > 0) {
+    const isBundle = (selected.itemType === 'Kit' || selected.itemType === 'Installation Package') && selected.kitComponents && selected.kitComponents.length > 0;
+
+    if (isBundle) {
       const totalKitPrice = Number(selected.price) || 0;
       const count = selected.kitComponents.length;
       const baseShare = Math.floor(totalKitPrice / count);
@@ -223,23 +225,23 @@ const Sales = () => {
       const expandedItems = selected.kitComponents.map((comp, compIdx) => {
         const compPrice = compIdx === 0 ? baseShare + remainder : baseShare;
         return {
-          itemType: 'Product',
+          itemType: selected.itemType === 'Installation Package' ? 'Service' : 'Product',
           name: comp.name + (comp.specification ? ` (${comp.specification})` : ''),
           description: `Part of ${selected.name} (${comp.quantity} ${comp.unit || 'Nos'})`,
           quantity: comp.quantity || 1,
           price: compPrice,
-          gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : 12
+          gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : (selected.itemType === 'Installation Package' ? 18 : 12)
         };
       });
 
-      // Replace current row with all kit items
+      // Replace current row with all package items
       setItems(prev => {
         const nextItems = [...prev];
         nextItems.splice(index, 1, ...expandedItems);
         return nextItems;
       });
 
-      toast.success(`Solar Kit "${selected.name}" added as ${expandedItems.length} individual items!`);
+      toast.success(`${selected.itemType === 'Installation Package' ? 'Installation Package' : 'Solar Kit'} "${selected.name}" added as ${expandedItems.length} individual items!`);
       return;
     }
 
@@ -271,12 +273,12 @@ const Sales = () => {
       const expandedItems = selected.kitComponents.map((comp, compIdx) => {
         const compPrice = compIdx === 0 ? baseShare + remainder : baseShare;
         return {
-          itemType: 'Product',
+          itemType: selected.itemType === 'Installation Package' ? 'Service' : 'Product',
           name: comp.name + (comp.specification ? ` (${comp.specification})` : ''),
           description: `Part of ${selected.name} (${comp.quantity} ${comp.unit || 'Nos'})`,
           quantity: comp.quantity || 1,
           price: compPrice,
-          gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : 12
+          gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : (selected.itemType === 'Installation Package' ? 18 : 12)
         };
       });
 
@@ -287,15 +289,15 @@ const Sales = () => {
         return [...prev, ...expandedItems];
       });
 
-      toast.success(`Solar Kit "${selected.name}" added with ${expandedItems.length} components!`);
+      toast.success(`${selected.itemType === 'Installation Package' ? 'Installation Package' : 'Solar Kit'} "${selected.name}" added with ${expandedItems.length} components!`);
     } else {
       const newItem = {
-        itemType: 'Product',
+        itemType: selected.itemType || 'Product',
         name: selected.name,
         description: selected.description || '',
         quantity: 1,
         price: selected.price,
-        gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : 12
+        gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : (selected.itemType === 'Installation Package' ? 18 : 12)
       };
       setItems(prev => {
         if (prev.length === 1 && !prev[0].name && !prev[0].price) {
@@ -1059,10 +1061,30 @@ const Sales = () => {
                         defaultValue=""
                         className="px-2.5 py-1 text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 rounded-lg focus:outline-none cursor-pointer hover:bg-amber-100 transition-colors"
                       >
-                        <option value="" disabled>+ Insert Solar Kit Package</option>
+                        <option value="" disabled>+ Insert Solar Kit</option>
                         {productsList.filter(p => p.itemType === 'Kit').map(k => (
                           <option key={k._id} value={k.name}>
                             {k.name} ({k.capacity || 'Kit'}) — ₹{Number(k.price).toLocaleString('en-IN')}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {/* Quick Insert Installation Package dropdown */}
+                    {productsList.some(p => p.itemType === 'Installation Package') && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleInsertKit(e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        defaultValue=""
+                        className="px-2.5 py-1 text-xs font-bold bg-teal-50 text-teal-800 border border-teal-300 rounded-lg focus:outline-none cursor-pointer hover:bg-teal-100 transition-colors"
+                      >
+                        <option value="" disabled>+ Insert Installation Package</option>
+                        {productsList.filter(p => p.itemType === 'Installation Package').map(k => (
+                          <option key={k._id} value={k.name}>
+                            {k.name} ({k.capacity || 'Package'}) — ₹{Number(k.price).toLocaleString('en-IN')}
                           </option>
                         ))}
                       </select>
@@ -1080,7 +1102,7 @@ const Sales = () => {
                 <div className="space-y-3">
                   {items.map((item, index) => (
                     <div 
-                      key={index}
+                      key={index} 
                       className="p-3.5 bg-gray-50 border border-gray-200/80 rounded-xl space-y-3 animate-fadeIn"
                     >
                       <div className="grid grid-cols-12 gap-2.5 items-center">
@@ -1096,6 +1118,7 @@ const Sales = () => {
                           >
                             <option value="Product">Product</option>
                             <option value="Kit">Solar Kit</option>
+                            <option value="Installation Package">Installation Package</option>
                             <option value="Service">Service</option>
                           </select>
                         </div>
@@ -1103,7 +1126,7 @@ const Sales = () => {
                         {/* Item Name / Product Select */}
                         <div className="col-span-12 sm:col-span-5">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
-                            Select {item.itemType === 'Kit' ? 'Solar Kit' : item.itemType} *
+                            Select {item.itemType === 'Kit' ? 'Solar Kit' : (item.itemType === 'Installation Package' ? 'Installation Package' : item.itemType)} *
                           </label>
                           <select
                             value={item.name}
@@ -1111,10 +1134,11 @@ const Sales = () => {
                             required
                             className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           >
-                            <option value="">-- Select {item.itemType === 'Kit' ? 'Solar Kit' : item.itemType} --</option>
+                            <option value="">-- Select {item.itemType === 'Kit' ? 'Solar Kit' : (item.itemType === 'Installation Package' ? 'Installation Package' : item.itemType)} --</option>
                             {productsList
                               .filter(prod => {
                                 if (item.itemType === 'Kit') return prod.itemType === 'Kit';
+                                if (item.itemType === 'Installation Package') return prod.itemType === 'Installation Package';
                                 if (item.itemType === 'Product') return prod.itemType === 'Product' || !prod.itemType;
                                 return prod.itemType === item.itemType;
                               })
