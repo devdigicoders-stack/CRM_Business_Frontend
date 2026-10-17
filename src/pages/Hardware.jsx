@@ -37,12 +37,37 @@ const Hardware = () => {
     const [filterTab, setFilterTab] = useState('all'); // 'all' | 'configured' | 'pending'
 
     // User permissions check
-    const userProfile = JSON.parse(localStorage.getItem('user') || '{}');
-    const isAdmin = userProfile?.role?.name === 'Admin' || userProfile?.role?.name === 'Super Admin';
+    const [userProfile, setUserProfile] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('user') || '{}');
+        } catch {
+            return {};
+        }
+    });
+
+    const isAdmin = 
+        userProfile?.role?.name === 'Admin' || 
+        userProfile?.role?.name === 'Super Admin' ||
+        userProfile?.name === 'Super Admin' ||
+        userProfile?.email === 'admin@digicoders.com';
+
     const userPermissions = userProfile?.role?.permissions || [];
     const canManageHardware = isAdmin || userPermissions.includes('manage_hardware') || userPermissions.includes('manage_project_workflow');
 
+    const fetchUserProfile = async () => {
+        try {
+            const res = await apiClient.get('/auth/profile');
+            if (res.data?.user) {
+                setUserProfile(res.data.user);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+            }
+        } catch (err) {
+            console.error('Error fetching profile in Hardware:', err);
+        }
+    };
+
     useEffect(() => {
+        fetchUserProfile();
         fetchProjects();
         fetchProducts();
     }, []);

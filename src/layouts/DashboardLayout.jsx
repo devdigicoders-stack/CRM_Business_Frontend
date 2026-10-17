@@ -52,7 +52,10 @@ const DashboardLayout = () => {
         const fetchProfile = async () => {
             try {
                 const res = await apiClient.get('/auth/profile');
-                setUser(res.data.user);
+                if (res.data?.user) {
+                    setUser(res.data.user);
+                    localStorage.setItem('user', JSON.stringify(res.data.user));
+                }
             } catch (err) {
                 console.error("Error fetching profile", err);
             }
@@ -61,8 +64,9 @@ const DashboardLayout = () => {
     }, []);
 
     const handleLogout = () => {
-        // Remove authentication token
+        // Remove authentication token and cached user
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         // Optional: you can also clear other auth-related local storage items here
         
         // Redirect to login page

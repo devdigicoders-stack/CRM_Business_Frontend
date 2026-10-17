@@ -23,9 +23,12 @@ const Login = () => {
         try {
             const data = await loginUser({ email, password });
             
-            // Assuming token is returned in data.token
+            // Store token and user
             if (data.token) {
                 localStorage.setItem('token', data.token);
+                if (data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
                 toast.success("Login Successful!");
                 navigate('/dashboard'); // Redirect to dashboard
             } else {
