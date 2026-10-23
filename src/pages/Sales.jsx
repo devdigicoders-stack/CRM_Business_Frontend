@@ -1062,6 +1062,29 @@ const Sales = () => {
                         <ChevronDown className="w-3.5 h-3.5 text-teal-700 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     )}
+                    {/* Quick Insert Wire Kit dropdown */}
+                    {productsList.some(p => p.itemType === 'Wire Kit') && (
+                      <div className="relative">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleInsertKit(e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                          defaultValue=""
+                          className="appearance-none pl-3 pr-7 py-1.5 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100/80 text-indigo-900 border border-indigo-300/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer transition-all shadow-xs"
+                        >
+                          <option value="" disabled>+ Insert Wire Kit</option>
+                          {productsList.filter(p => p.itemType === 'Wire Kit').map(k => (
+                            <option key={k._id} value={k.name}>
+                              {k.name} {k.capacity ? `(${k.capacity})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-indigo-700 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={handleAddItem}
@@ -1091,6 +1114,7 @@ const Sales = () => {
                           >
                             <option value="Product">Product</option>
                             <option value="Kit">Solar Kit</option>
+                            <option value="Wire Kit">Wire Kit</option>
                             <option value="Installation Package">Installation Package</option>
                             <option value="Service">Service</option>
                           </select>
@@ -1099,7 +1123,7 @@ const Sales = () => {
                         {/* Item Name / Product Select */}
                         <div className="col-span-12 sm:col-span-6">
                           <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                            Select {item.itemType === 'Kit' ? 'Solar Kit' : (item.itemType === 'Installation Package' ? 'Installation Package' : item.itemType)} *
+                            Select {item.itemType === 'Kit' ? 'Solar Kit' : (item.itemType === 'Installation Package' ? 'Installation Package' : (item.itemType === 'Wire Kit' ? 'Wire Kit' : item.itemType))} *
                           </label>
                           <select
                             value={item.name}
@@ -1107,10 +1131,11 @@ const Sales = () => {
                             required
                             className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all truncate"
                           >
-                            <option value="">-- Select {item.itemType === 'Kit' ? 'Solar Kit' : (item.itemType === 'Installation Package' ? 'Installation Package' : item.itemType)} --</option>
+                            <option value="">-- Select {item.itemType === 'Kit' ? 'Solar Kit' : (item.itemType === 'Installation Package' ? 'Installation Package' : (item.itemType === 'Wire Kit' ? 'Wire Kit' : item.itemType))} --</option>
                             {productsList
                               .filter(prod => {
                                 if (item.itemType === 'Kit') return prod.itemType === 'Kit';
+                                if (item.itemType === 'Wire Kit') return prod.itemType === 'Wire Kit';
                                 if (item.itemType === 'Installation Package') return prod.itemType === 'Installation Package';
                                 if (item.itemType === 'Product') return prod.itemType === 'Product' || !prod.itemType;
                                 return prod.itemType === item.itemType;
