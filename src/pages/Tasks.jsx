@@ -241,13 +241,26 @@ const Tasks = () => {
     return permissions.includes(perm);
   };
 
+  const isOpsOrAdmin = userProfile?.role?.name === 'Admin' || (permissions || []).includes('manage_project_workflow');
+
   const filteredTasks = tasks.filter(task => {
-    // When on Open tab, strictly hide Completed and Approved tasks
-    if (activeTab === 'Open' && (task.status === 'Completed' || task.status === 'Approved')) {
-      return false;
+    // When on Open tab:
+    if (activeTab === 'Open') {
+      if (task.status === 'Completed' || task.status === 'Approved') {
+        return false;
+      }
+      // For assigned employees, once they submit the task, it disappears from Open tasks:
+      if (!isOpsOrAdmin && task.status === 'Submitted') {
+        return false;
+      }
     }
-    if (activeTab === 'Completed' && task.status !== 'Completed' && task.status !== 'Approved') {
-      return false;
+    // When on Completed tab:
+    if (activeTab === 'Completed') {
+      if (isOpsOrAdmin) {
+        if (task.status !== 'Completed' && task.status !== 'Approved') return false;
+      } else {
+        if (task.status !== 'Completed' && task.status !== 'Approved' && task.status !== 'Submitted') return false;
+      }
     }
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
@@ -290,7 +303,7 @@ const Tasks = () => {
           <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
             activeTab === 'Open' ? 'bg-[#0B3A2C]/10 text-[#0B3A2C]' : 'bg-gray-100 text-gray-600'
           }`}>
-            {activeTab === 'Open' ? filteredTasks.length : tasks.filter(t => t.status !== 'Completed' && t.status !== 'Approved').length}
+            {activeTab === 'Open' ? filteredTasks.length : tasks.filter(t => isOpsOrAdmin ? (t.status !== 'Completed' && t.status !== 'Approved') : (t.status !== 'Completed' && t.status !== 'Approved' && t.status !== 'Submitted')).length}
           </span>
         </button>
 
@@ -306,7 +319,7 @@ const Tasks = () => {
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          <span>Completed</span>
+          <span>{isOpsOrAdmin ? 'Completed' : 'Completed / Submitted'}</span>
         </button>
       </div>
 

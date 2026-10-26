@@ -49,6 +49,7 @@ const Hardware = () => {
         userProfile?.role?.name === 'Admin' || 
         userProfile?.role?.name === 'Super Admin' ||
         userProfile?.name === 'Super Admin' ||
+        userProfile?.email === 'digitalgurucse@gmail.com' ||
         userProfile?.email === 'admin@digicoders.com';
 
     const userPermissions = userProfile?.role?.permissions || [];
