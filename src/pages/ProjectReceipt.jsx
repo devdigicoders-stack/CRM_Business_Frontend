@@ -165,7 +165,7 @@ const ProjectReceipt = () => {
     const taxBreakupTotalTaxable = Math.round((row1Taxable + row2Taxable) * 100) / 100;
     const taxBreakupTotalGst = Math.round((row1Gst + row2Gst) * 100) / 100;
 
-    const minRows = Math.max(5, combinedItems.length);
+    const minRows = Math.max(7, combinedItems.length);
     const emptyRowsCount = Math.max(0, minRows - combinedItems.length);
 
     const shareOnWhatsApp = () => {
@@ -208,7 +208,15 @@ const ProjectReceipt = () => {
                     <div>
                         {/* 1. OFFICIAL TRUST HEADER BANNER WITH DYNAMIC INVOICE & DATE */}
                         <div className="header-banner-box">
-                            <img src="/image.png" alt="Ram Milan Singh Charitable Trust" className="header-banner-img" />
+                            <img 
+                                src="/quotation_banner.png" 
+                                onError={(e) => { 
+                                    e.currentTarget.onerror = null; 
+                                    e.currentTarget.src = "/image%20copy%202.png"; 
+                                }} 
+                                alt="Ram Milan Singh Charitable Trust" 
+                                className="header-banner-img" 
+                            />
                             <div className="banner-overlay-no">{invNumber}</div>
                             <div className="banner-overlay-date">{invDate}</div>
                         </div>
@@ -469,7 +477,15 @@ const ProjectReceipt = () => {
                             <div className="signatory-column">
                                 <div className="sign-for-label">For : Ram Milan Singh Charitable Trust</div>
                                 <div className="sign-img-wrap">
-                                    <img src="/image copy 2.png" alt="Managing Trustee Signature" className="sign-official-img" />
+                                    <img 
+                                        src="/quotation_signature.png" 
+                                        onError={(e) => { 
+                                            e.currentTarget.onerror = null; 
+                                            e.currentTarget.src = "/image%20copy.png"; 
+                                        }} 
+                                        alt="Managing Trustee Signature" 
+                                        className="sign-official-img" 
+                                    />
                                 </div>
                                 <div className="sign-hr-line"></div>
                                 <div className="sign-auth-label">Authorized Signatory</div>
