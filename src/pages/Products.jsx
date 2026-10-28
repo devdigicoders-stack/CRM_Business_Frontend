@@ -210,6 +210,7 @@ const Products = () => {
     basePrice: '', 
     price: '', 
     gstPercentage: 18, 
+    warranty: '', 
     description: '' 
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -225,6 +226,7 @@ const Products = () => {
     basePrice: '',
     price: '',
     gstPercentage: 12,
+    warranty: '',
     description: '',
     kitComponents: [
       { name: 'Mono PERC Solar Panels (540W)', quantity: 6, unit: 'Nos', specification: '540W-595W Tier-1' },
@@ -258,7 +260,7 @@ const Products = () => {
   // Standard Product Modal Handlers
   const openAddModal = () => {
     setEditingProduct(null);
-    setFormData({ itemType: 'Product', name: '', basePrice: '', price: '', gstPercentage: 18, description: '' });
+    setFormData({ itemType: 'Product', name: '', basePrice: '', price: '', gstPercentage: 18, warranty: '', description: '' });
     setIsModalOpen(true);
   };
 
@@ -274,6 +276,7 @@ const Products = () => {
         basePrice: product.basePrice || '',
         price: product.price,
         gstPercentage: product.gstPercentage ?? (product.itemType === 'Installation Package' ? 18 : 12),
+        warranty: product.warranty || '',
         description: product.description || '',
         kitComponents: product.kitComponents && product.kitComponents.length > 0 
           ? product.kitComponents 
@@ -290,6 +293,7 @@ const Products = () => {
       basePrice: product.basePrice || '', 
       price: product.price, 
       gstPercentage: product.gstPercentage ?? 18,
+      warranty: product.warranty || '',
       description: product.description || '' 
     });
     setIsModalOpen(true);
@@ -335,6 +339,7 @@ const Products = () => {
       basePrice: tmpl.basePrice || '',
       price: tmpl.price || '',
       gstPercentage: tmpl.gstPercentage || 12,
+      warranty: tmpl.warranty || '25 Years (Panels) / 5 Years (Inverter)',
       description: tmpl.description || '',
       kitComponents: tmpl.kitComponents.map(c => ({ ...c }))
     });
@@ -357,6 +362,7 @@ const Products = () => {
       basePrice: tmpl.basePrice || '',
       price: tmpl.price || '',
       gstPercentage: tmpl.gstPercentage || 18,
+      warranty: tmpl.warranty || '05 Years System Warranty',
       description: tmpl.description || '',
       kitComponents: tmpl.kitComponents.map(c => ({ ...c }))
     });
@@ -379,6 +385,7 @@ const Products = () => {
       basePrice: tmpl.basePrice || '',
       price: tmpl.price || '',
       gstPercentage: tmpl.gstPercentage || 18,
+      warranty: tmpl.warranty || '05 Years System Warranty',
       description: tmpl.description || '',
       kitComponents: tmpl.kitComponents.map(c => ({ ...c }))
     });
@@ -715,6 +722,11 @@ const Products = () => {
                               {product.phase && (
                                 <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600">
                                   {product.phase}
+                                </span>
+                              )}
+                              {product.warranty && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  🛡️ {product.warranty}
                                 </span>
                               )}
                             </div>
@@ -1063,6 +1075,17 @@ const Products = () => {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">System / Product Warranty (e.g. 25 Years, 05 Years)</label>
+                  <input
+                    type="text"
+                    value={kitFormData.warranty || ''}
+                    onChange={(e) => setKitFormData(f => ({ ...f, warranty: e.target.value }))}
+                    placeholder="e.g. 25 Years (Panels) / 5 Years (Inverter)"
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Description / Overview</label>
                   <textarea
                     rows={2}
@@ -1375,7 +1398,16 @@ const Products = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description (Optional)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Warranty (e.g. 25 Years, 05 Years)</label>
+                <input
+                  type="text"
+                  value={formData.warranty || ''}
+                  onChange={(e) => setFormData(f => ({ ...f, warranty: e.target.value }))}
+                  placeholder="e.g. 25 Years or 05 Years"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+              <div>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}

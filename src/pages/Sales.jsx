@@ -228,6 +228,8 @@ const Sales = () => {
           price: selected.price !== undefined ? selected.price : item.price,
           description: defaultDesc || item.description,
           gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : (selected.itemType === 'Installation Package' ? 18 : item.gstPercentage),
+          warranty: selected.warranty || item.warranty || '',
+          itemId: selected._id,
           itemType: selected.itemType || item.itemType
         };
       }
@@ -250,7 +252,9 @@ const Sales = () => {
       description: defaultDesc,
       quantity: 1,
       price: selected.price !== undefined ? selected.price : 0,
-      gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : (selected.itemType === 'Installation Package' ? 18 : 12)
+      gstPercentage: selected.gstPercentage !== undefined ? selected.gstPercentage : (selected.itemType === 'Installation Package' ? 18 : 12),
+      warranty: selected.warranty || '',
+      itemId: selected._id
     };
 
     setItems(prev => {
@@ -285,7 +289,9 @@ const Sales = () => {
         description: item.description || '',
         price: item.price !== undefined ? item.price : '',
         quantity: item.quantity !== undefined ? item.quantity : 1,
-        gstPercentage: item.gstPercentage !== undefined ? item.gstPercentage : 18
+        gstPercentage: item.gstPercentage !== undefined ? item.gstPercentage : 18,
+        warranty: item.warranty || (item.itemId && item.itemId.warranty) || '',
+        itemId: item.itemId?._id || item.itemId || undefined
       })));
     } else {
       setItems([{ itemType: 'Product', name: '', description: '', price: '', quantity: 1, gstPercentage: 18 }]);
@@ -322,7 +328,9 @@ const Sales = () => {
           description: item.description?.trim() || '',
           price: Number(item.price),
           quantity: Number(item.quantity) || 1,
-          gstPercentage: Number(item.gstPercentage) || 0
+          gstPercentage: Number(item.gstPercentage) || 0,
+          warranty: item.warranty || '',
+          itemId: item.itemId || undefined
         })),
         subTotal: calculatedSubTotal
       };

@@ -120,6 +120,7 @@ const ProjectReceipt = () => {
                 qty: Number(item.quantity || 1),
                 rate: Number(item.price || 0),
                 gstPerc: Number(item.gstPercentage !== undefined ? item.gstPercentage : 18),
+                warranty: item.warranty || match?.warranty || '',
                 itemType: item.itemType || 'Product'
             };
         });
@@ -165,6 +166,50 @@ const ProjectReceipt = () => {
     const taxBreakupTotalTaxable = Math.round((row1Taxable + row2Taxable) * 100) / 100;
     const taxBreakupTotalGst = Math.round((row1Gst + row2Gst) * 100) / 100;
 
+    // Dynamic Warranty Extraction from Quotation / Invoice Items
+    let warrantyList = [];
+    const seenWarranty = new Set();
+
+    combinedItems.forEach(it => {
+        const w = (it.warranty || '').trim();
+        const nameLower = (it.name || '').toLowerCase();
+        if (w) {
+            let label = it.name;
+            if (nameLower.includes('panel')) label = 'Panel';
+            else if (nameLower.includes('inverter')) label = 'Inverter';
+            else if (nameLower.includes('battery')) label = 'Battery';
+            else if (nameLower.includes('structure')) label = 'Structure';
+            else if (nameLower.includes('wire')) label = 'Wiring / BOS';
+
+            const key = label.toLowerCase();
+            if (!seenWarranty.has(key)) {
+                seenWarranty.add(key);
+                let durationText = w;
+                if (/^\d+$/.test(w)) {
+                    const n = parseInt(w, 10);
+                    durationText = `${n} ${n === 1 ? 'Year' : 'Years'}`;
+                }
+                warrantyList.push({ name: label, duration: durationText });
+            }
+        }
+    });
+
+    if (warrantyList.length === 0) {
+        const allText = combinedItems.map(i => (i.name || '') + ' ' + (i.description || '')).join(' ').toLowerCase();
+        if (allText.includes('panel') || allText.includes('solar kit') || allText.includes('rooftop')) {
+            warrantyList.push({ name: 'Panel', duration: '25 Years' });
+        }
+        if (allText.includes('inverter') || allText.includes('solar kit') || allText.includes('rooftop') || allText.includes('grid-tie')) {
+            warrantyList.push({ name: 'Inverter', duration: '05 Years' });
+        }
+        if (allText.includes('battery')) {
+            warrantyList.push({ name: 'Battery', duration: '05 Years' });
+        }
+        if (warrantyList.length === 0) {
+            warrantyList.push({ name: 'System Warranty', duration: '05 Years' });
+        }
+    }
+
     const minRows = Math.max(4, combinedItems.length);
     const emptyRowsCount = Math.max(0, minRows - combinedItems.length);
 
@@ -209,7 +254,7 @@ const ProjectReceipt = () => {
                         {/* 1. OFFICIAL TRUST HEADER BANNER WITH DYNAMIC INVOICE & DATE */}
                         <div className="header-banner-box">
                             <img 
-                                src="/image%20copy%203.png" 
+                                src="/image%20copy%204.png" 
                                 onError={(e) => { 
                                     e.currentTarget.onerror = null; 
                                     e.currentTarget.src = "/quotation_banner.png"; 
@@ -447,27 +492,15 @@ const ProjectReceipt = () => {
                                 <div className="info-card-body" style={{ padding: 0 }}>
                                     <table className="warranty-table-grid">
                                         <tbody>
-                                            <tr>
-                                                <td className="w-item">Panel</td>
-                                                <td className="w-dur">
-                                                    <strong style={{ color: '#0f172a' }}>25 Years</strong><br />
-                                                    <span className="w-sub">(as per manufacturer)</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td className="w-item">Inverter</td>
-                                                <td className="w-dur">
-                                                    <strong style={{ color: '#0f172a' }}>05 Years</strong><br />
-                                                    <span className="w-sub">(as per manufacturer)</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td className="w-item" style={{ borderBottom: 'none' }}>Battery</td>
-                                                <td className="w-dur" style={{ borderBottom: 'none' }}>
-                                                    <strong style={{ color: '#0f172a' }}>05 Years</strong><br />
-                                                    <span className="w-sub">(as per manufacturer)</span>
-                                                </td>
-                                            </tr>
+                                            {warrantyList.map((w, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="w-item" style={{ borderBottom: idx === warrantyList.length - 1 ? 'none' : undefined }}>{w.name}</td>
+                                                    <td className="w-dur" style={{ borderBottom: idx === warrantyList.length - 1 ? 'none' : undefined }}>
+                                                        <strong style={{ color: '#0f172a' }}>{w.duration}</strong>
+
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -504,10 +537,11 @@ const ProjectReceipt = () => {
                 }
                 .action-toolbar {
                     display: flex;
-                    justify-content: space-between;
+
                     align-items: center;
                     background: #ffffff;
                     border-radius: 12px;
+                    justify-content: space-between;
                     padding: 12px 24px;
                     margin-bottom: 20px;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
@@ -564,14 +598,14 @@ const ProjectReceipt = () => {
                 .a4-sheet {
                     background: #ffffff;
                     width: 830px;
-                    min-height: 1123px;
+
                     padding: 30px;
                     border-radius: 8px;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
                     border: 1px solid #cbd5e1;
                     display: flex;
                     flex-direction: column;
-                    justify-content: space-between;
+
                     margin: 0 auto;
                 }
                 .header-banner-box {
@@ -846,7 +880,7 @@ const ProjectReceipt = () => {
                     border-right: none;
                 }
                 .amount-words-box {
-                    margin-top: 6px;
+                    margin-top: 14px;
                     font-size: 11px;
                     color: #0f172a;
                     padding: 2px 0;
@@ -861,22 +895,22 @@ const ProjectReceipt = () => {
                     margin-left: 4px;
                 }
                 .footer-section {
-                    margin-top: 10px;
-                    padding-top: 6px;
+                    margin-top: 14px;
+                    padding-top: 2px;
                 }
                 .footer-grid-3col {
                     display: grid;
                     grid-template-columns: 2.1fr 1.3fr 1.3fr;
-                    gap: 10px;
+                    gap: 6px;
                     align-items: stretch;
                 }
                 .footer-left-col {
                     display: flex;
                     flex-direction: column;
-                    gap: 8px;
+                    gap: 4px;
                 }
                 .info-card-box {
-                    border: 1.5px solid #334155;
+                    border: 1px solid #334155;
                     border-radius: 4px;
                     overflow: hidden;
                     background: #ffffff;
@@ -884,41 +918,41 @@ const ProjectReceipt = () => {
                 .info-card-header {
                     background: linear-gradient(90deg, #00487C 0%, #06606A 100%);
                     color: #ffffff;
-                    font-size: 10.5px;
-                    font-weight: 900;
-                    padding: 4px 10px;
-                    letter-spacing: 0.3px;
+                    font-size: 8.5px;
+                    font-weight: 800;
+                    padding: 2.5px 7px;
+                    letter-spacing: 0.2px;
                 }
                 .info-card-body {
-                    padding: 6px 10px;
-                    font-size: 9.5px;
+                    padding: 3px 6px;
+                    font-size: 7.5px;
                     color: #1e293b;
                 }
                 .terms-list-ol {
                     margin: 0;
-                    padding-left: 14px;
-                    line-height: 1.35;
+                    padding-left: 12px;
+                    line-height: 1.2;
                 }
                 .terms-list-ol li {
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                 }
                 .account-table-grid {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 9.5px;
-                    line-height: 1.35;
+                    font-size: 7.5px;
+                    line-height: 1.2;
                 }
                 .account-table-grid td {
-                    padding: 1.5px 2px;
+                    padding: 0.5px 1px;
                     vertical-align: top;
                 }
                 .acc-lbl {
                     color: #475569;
                     font-weight: 700;
-                    width: 85px;
+                    width: 72px;
                 }
                 .acc-sep {
-                    width: 10px;
+                    width: 8px;
                     font-weight: 800;
                 }
                 .acc-val {
@@ -928,11 +962,11 @@ const ProjectReceipt = () => {
                 .warranty-table-grid {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 10px;
+                    font-size: 8px;
                 }
                 .warranty-table-grid td {
                     border-bottom: 1px solid #cbd5e1;
-                    padding: 10px 8px;
+                    padding: 4px 6px;
                     vertical-align: middle;
                 }
                 .w-item {
@@ -946,48 +980,48 @@ const ProjectReceipt = () => {
                     text-align: right;
                 }
                 .w-sub {
-                    font-size: 8.5px;
+                    font-size: 7px;
                     color: #64748b;
                 }
                 .signatory-column {
-                    border: 1.5px solid #334155;
+                    border: 1px solid #334155;
                     border-radius: 4px;
-                    padding: 8px 10px;
+                    padding: 4px 6px;
                     background: #ffffff;
                     display: flex;
                     flex-direction: column;
-                    justify-content: space-between;
+
                     text-align: center;
                 }
                 .sign-for-label {
-                    font-size: 10.5px;
+                    font-size: 8.5px;
                     font-weight: 900;
                     color: #00487C;
                     text-transform: uppercase;
-                    line-height: 1.25;
+                    line-height: 1.15;
                 }
                 .sign-img-wrap {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 6px 0;
+                    padding: 2px 0;
                 }
                 .sign-official-img {
-                    max-height: 52px;
-                    max-width: 130px;
+                    max-height: 38px;
+                    max-width: 105px;
                     object-contain: fit;
                 }
                 .sign-hr-line {
                     height: 1px;
                     background: #94a3b8;
-                    margin: 4px 10px;
+                    margin: 2px 8px;
                 }
                 .sign-auth-label {
-                    font-size: 10px;
+                    font-size: 8px;
                     font-weight: 900;
                     color: #000000;
                     text-transform: uppercase;
-                    letter-spacing: 0.3px;
+                    letter-spacing: 0.2px;
                 }
 
                 @media print {
