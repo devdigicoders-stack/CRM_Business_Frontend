@@ -165,7 +165,7 @@ const ProjectReceipt = () => {
     const taxBreakupTotalTaxable = Math.round((row1Taxable + row2Taxable) * 100) / 100;
     const taxBreakupTotalGst = Math.round((row1Gst + row2Gst) * 100) / 100;
 
-    const minRows = Math.max(7, combinedItems.length);
+    const minRows = Math.max(4, combinedItems.length);
     const emptyRowsCount = Math.max(0, minRows - combinedItems.length);
 
     const shareOnWhatsApp = () => {
@@ -209,10 +209,10 @@ const ProjectReceipt = () => {
                         {/* 1. OFFICIAL TRUST HEADER BANNER WITH DYNAMIC INVOICE & DATE */}
                         <div className="header-banner-box">
                             <img 
-                                src="/quotation_banner.png" 
+                                src="/image%20copy%203.png" 
                                 onError={(e) => { 
                                     e.currentTarget.onerror = null; 
-                                    e.currentTarget.src = "/image%20copy%202.png"; 
+                                    e.currentTarget.src = "/quotation_banner.png"; 
                                 }} 
                                 alt="Ram Milan Singh Charitable Trust" 
                                 className="header-banner-img" 
@@ -589,7 +589,7 @@ const ProjectReceipt = () => {
                 .banner-overlay-no {
                     position: absolute;
                     left: 81.2%;
-                    top: 80.8%;
+                    top: 79.4%;
                     font-size: 12.5px;
                     font-weight: 800;
                     color: #00487C;
@@ -602,7 +602,7 @@ const ProjectReceipt = () => {
                 .banner-overlay-date {
                     position: absolute;
                     left: 81.2%;
-                    top: 88.2%;
+                    top: 86.8%;
                     font-size: 12.5px;
                     font-weight: 800;
                     color: #0f172a;
@@ -651,9 +651,9 @@ const ProjectReceipt = () => {
                     text-align: center;
                     border-bottom: 2px solid #1e293b;
                     border-right: 1.5px solid #334155;
-                    padding: 10px 6px;
-                    font-size: 12.5px;
-                    line-height: 1.3;
+                    padding: 5px 6px;
+                    font-size: 11.5px;
+                    line-height: 1.2;
                     vertical-align: middle;
                     letter-spacing: 0.2px;
                 }
